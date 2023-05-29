@@ -1,0 +1,13 @@
+[project]
+name = "d"
+version = "0.0.0"
+
+[project.optional-dependencies]
+dev = [
+    "flake8",
+    "pytest",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
