@@ -1,0 +1,7 @@
+[flake8]
+exclude = .git,__pycache__,venv,.venv,build,dist
+per-file-ignores =
+    # expected 2 blank lines, found 1
+    src/serfs/common/exceptions.py: E302
+    # 'x' imported but unused
+    src/serfs/services/__init__.py: F401
