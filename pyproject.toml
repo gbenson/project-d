@@ -1,6 +1,9 @@
 [project]
 name = "d"
 version = "0.0.0"
+dependencies = [
+    "redis",
+]
 
 [project.optional-dependencies]
 dev = [
