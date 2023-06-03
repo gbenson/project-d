@@ -4,10 +4,13 @@ from redis import (
     Redis as _Redis,
 )
 
-from ..common.exceptions import (
-    ChecksNotImplementedError,
-    SecurityError,
-)
+from ..common.audit import ServiceAuditor
+from ..common.exceptions import SecurityError
+
+
+class Auditor(ServiceAuditor):
+    def audit(self):
+        pass
 
 
 class Connection(_Connection):
@@ -27,10 +30,7 @@ class Connection(_Connection):
     def _connect(self):
         """Create a TCP socket connection.
         """
-        if self.host != "127.0.0.1":
-            raise ChecksNotImplementedError
-        server_pid = pidof_localhost_server(self.port)
-        raise ChecksNotImplementedError
+        Auditor.audit_service((self.host, self.port))
         return super()._connect()
 
 

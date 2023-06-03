@@ -4,4 +4,5 @@ per-file-ignores =
     # expected 2 blank lines, found 1
     src/serfs/common/exceptions.py: E302
     # 'x' imported but unused
+    src/serfs/common/audit/__init__.py: F401
     src/serfs/services/__init__.py: F401
