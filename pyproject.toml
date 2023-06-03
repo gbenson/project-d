@@ -12,6 +12,9 @@ dev = [
     "pytest",
 ]
 
+[project.scripts]
+carla = "nx.workers.carla:main"
+
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
