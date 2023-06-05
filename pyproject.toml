@@ -1,5 +1,5 @@
 [project]
-name = "d"
+name = "nx-workers"
 version = "0.0.0"
 dependencies = [
     "redis",
