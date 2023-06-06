@@ -13,16 +13,16 @@ class ARPMonitorCallback:
     def __init__(self):
         self.db = Redis()
 
-    def __call__(self, pkt):
-        if ARP not in pkt:
+    def __call__(self, packet):
+        if ARP not in packet:
             return
-        if pkt[ARP].op not in (1, 2):  # who-has or is-at
+        if packet[ARP].op not in (1, 2):  # who-has, is-at
             return
 
         # Get everything ready to store.
-        macaddr = pkt[ARP].hwsrc.lower()
-        ipv4addr = pkt[ARP].psrc
-        recv_time = pkt.time
+        macaddr = packet[ARP].hwsrc.lower()
+        ipv4addr = packet[ARP].psrc
+        recv_time = packet.time
         common = {
             "last_seen": recv_time,
             "seen_by": "carla",
