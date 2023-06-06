@@ -1,10 +1,10 @@
 [project]
 name = "nx-workers"
-version = "0.0.0"
 dependencies = [
     "scapy",
     "redis",
 ]
+dynamic = ["version"]
 
 [project.optional-dependencies]
 dev = [
@@ -15,3 +15,6 @@ dev = [
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+version = {attr = "nx.__version__"}
