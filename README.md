@@ -20,7 +20,11 @@ Upgrade pip and setuptools:
 ```sh
 pip install --upgrade pip setuptools
 ```
-Install in editable mode:
+Install in editable mode for development:
 ```sh
 pip install -e .[dev]
+```
+Build a wheel to deploy:
+```sh
+pip wheel "nx-workers @ file://$PWD/"
 ```
