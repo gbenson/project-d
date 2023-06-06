@@ -10,8 +10,10 @@ log = logging.getLogger(__name__)
 
 
 class ARPMonitorCallback:
-    def __init__(self):
-        self.db = Redis()
+    def __init__(self, db=None):
+        if db is None:
+            db = Redis()
+        self.db = db
 
     def __call__(self, packet):
         if ARP not in packet:
