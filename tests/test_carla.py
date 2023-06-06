@@ -21,9 +21,10 @@ class MockPipeline:
     def hsetnx(self, *args, **kwargs):
         self._hset("hsetnx", *args, **kwargs)
 
-    def _hset(self, cmd, name, key, value, mapping={}):
+    def _hset(self, cmd, name, key=None, value=None, mapping={}):
         args = mapping.copy()
-        args.update({key: value})
+        if None not in (key, value):
+            args.update({key: value})
         self.log.append([cmd, name, list(sorted(args.items()))])
 
     def execute(self):
@@ -74,4 +75,17 @@ def test_regular_packets(op):
             ("last_seen", 1686086875.268219),
             ("mac", "00:0d:f7:12:fe"),
             ("seen_by", "carla")]],
+        "execute"]
+
+
+def test_unspecified_ipv4_not_stored():
+    """It doesn't store the unspecified IPv4 address."""
+    callback = ARPMonitorCallback(MockDatabase())
+    callback(MockARPPacket(psrc="0.0.0.0"))
+    assert callback.db.log == [
+        ["hset", "mac_00:0d:f7:12:fe", [
+            ("last_seen", 1686086875.268219),
+            ("seen_by", "carla")]],
+        ["hsetnx", "mac_00:0d:f7:12:fe", [
+            ("first_seen", 1686086875.268219)]],
         "execute"]

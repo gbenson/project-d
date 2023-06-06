@@ -32,13 +32,19 @@ class ARPMonitorCallback:
 
         # Pipeline everything into the database.
         pipeline = self.db.pipeline()
+        psrc_is_valid = ipv4addr != "0.0.0.0"
 
         mac_key = f"mac_{macaddr}"
-        pipeline.hset(mac_key, "ipv4", ipv4addr, mapping=common)
+        mac_mapping = common.copy()
+        if psrc_is_valid:
+            mac_mapping["ipv4"] = ipv4addr
+        pipeline.hset(mac_key, mapping=mac_mapping)
+
         pipeline.hsetnx(mac_key, "first_seen", recv_time)
 
-        ipv4_key = f"ipv4_{ipv4addr}"
-        pipeline.hset(ipv4_key, "mac", macaddr, mapping=common)
+        if psrc_is_valid:
+            ipv4_key = f"ipv4_{ipv4addr}"
+            pipeline.hset(ipv4_key, "mac", macaddr, mapping=common)
 
         pipeline.execute()
 
