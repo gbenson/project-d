@@ -1,6 +1,6 @@
 import pytest
 
-from nx.workers.carla import ARP, ARPMonitorCallback
+from nx.workers.carla import ARP, ARPMonitorWorker
 
 
 class MockDatabase:
@@ -47,24 +47,24 @@ class MockARPPacket(dict):
 
 def test_non_arp_packet():
     """It doesn't crash if a non-ARP packet is supplied."""
-    callback = ARPMonitorCallback(MockDatabase())
-    callback({})
-    assert not callback.db.log
+    worker = ARPMonitorWorker(MockDatabase())
+    worker.process_packet({})
+    assert not worker.db.log
 
 
 def test_unhandled_arp_packet():
     """It ignores packets with unhandled operations."""
-    callback = ARPMonitorCallback(MockDatabase())
-    callback(MockARPPacket(op=4))
-    assert not callback.db.log
+    worker = ARPMonitorWorker(MockDatabase())
+    worker.process_packet(MockARPPacket(op=4))
+    assert not worker.db.log
 
 
 @pytest.mark.parametrize("op", (1, 2))
 def test_regular_packets(op):
     """It handles ordinary who-has and is-at packets."""
-    callback = ARPMonitorCallback(MockDatabase())
-    callback(MockARPPacket(op=op))
-    assert callback.db.log == [
+    worker = ARPMonitorWorker(MockDatabase())
+    worker.process_packet(MockARPPacket(op=op))
+    assert worker.db.log == [
         ["hset", "mac_00:0d:f7:12:fe", [
             ("ipv4", "1.2.3.4"),
             ("last_seen", 1686086875.268219),
@@ -80,9 +80,9 @@ def test_regular_packets(op):
 
 def test_unspecified_ipv4_not_stored():
     """It doesn't store the unspecified IPv4 address."""
-    callback = ARPMonitorCallback(MockDatabase())
-    callback(MockARPPacket(psrc="0.0.0.0"))
-    assert callback.db.log == [
+    worker = ARPMonitorWorker(MockDatabase())
+    worker.process_packet(MockARPPacket(psrc="0.0.0.0"))
+    assert worker.db.log == [
         ["hset", "mac_00:0d:f7:12:fe", [
             ("last_seen", 1686086875.268219),
             ("seen_by", "carla")]],

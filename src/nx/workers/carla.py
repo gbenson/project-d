@@ -1,21 +1,14 @@
-import logging
-
-from scapy.all import ARP, IFACES, sniff
+from scapy.all import ARP
 from scapy.arch.linux import IFF_NOARP
 
-from ..common.logging import init_logging
-from ..services import Redis
-
-log = logging.getLogger(__name__)
+from ..common import PacketSnifferWorker
 
 
-class ARPMonitorCallback:
-    def __init__(self, db=None):
-        if db is None:
-            db = Redis()
-        self.db = db
+class ARPMonitorWorker(PacketSnifferWorker):
+    WORKER_NAME = "Carla"
+    WANTED_PACKETS = "arp"
 
-    def __call__(self, packet):
+    def process_packet(self, packet):
         if ARP not in packet:
             return
         if packet[ARP].op not in (1, 2):  # who-has, is-at
@@ -48,25 +41,15 @@ class ARPMonitorCallback:
 
         pipeline.execute()
 
-
-def main():
-    # rm .venv/bin/python3
-    # cp -a /usr/bin/python3.10 .venv/bin/python3
-    # sudo setcap cap_net_raw=eip .venv/bin/python3
-    init_logging()
-    log.info("Hi, I'm Carla")
-    interfaces = [name
-                  for name, iface in IFACES.items()
-                  if (name != "lo"
-                      and iface.is_valid()
-                      and not iface.flags & IFF_NOARP)]
     # Trying this on something with IFF_NOARP gets you the following:
     # ERROR: Cannot set filter: Failed to compile filter expression arp (-1)
     # ERROR: [scapy.runtime]: Cannot set filter: Failed to compile filter \
     # expression arp (-1)
-    sniff(
-        prn=ARPMonitorCallback(),
-        filter="arp",
-        store=False,
-        iface=interfaces,
-    )
+    @property
+    def interfaces(self):
+        return (dev
+                for dev in super().interfaces
+                if not dev.flags & IFF_NOARP)
+
+
+main = ARPMonitorWorker.main

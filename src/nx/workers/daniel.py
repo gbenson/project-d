@@ -1,11 +1,6 @@
-import logging
+from scapy.all import DHCP, Ether
 
-from scapy.all import DHCP, Ether, IFACES, sniff
-
-from ..common.logging import init_logging
-from ..services import Redis
-
-log = logging.getLogger(__name__)
+from ..common import PacketSnifferWorker
 
 Unknown = object()  # Sentinel
 
@@ -80,13 +75,11 @@ class DHCPOptions:
         self._repeated_options.append((name, curr, args))
 
 
-class DHCPMonitorCallback:
-    def __init__(self, db=None):
-        if db is None:
-            db = Redis()
-        self.db = db
+class DHCPMonitorWorker(PacketSnifferWorker):
+    WORKER_NAME = "Daniel"
+    WANTED_PACKETS = "udp and (port 67 or port 68)"
 
-    def __call__(self, packet):
+    def process_packet(self, packet):
         macaddr = packet.getlayer(Ether).src
         options = DHCPOptions(packet[DHCP].options)
         recv_time = packet.time
@@ -139,16 +132,4 @@ class DHCPMonitorCallback:
         pipeline.execute()
 
 
-def main():
-    init_logging()
-    log.info("Hi, I'm Daniel")
-    interfaces = [name
-                  for name, iface in IFACES.items()
-                  if name != "lo" and iface.is_valid()]
-    log.info(f"Listening on {', '.join(interfaces)}")
-    sniff(
-        prn=DHCPMonitorCallback(),
-        filter="udp and (port 67 or port 68)",
-        store=False,
-        iface=interfaces,
-    )
+main = DHCPMonitorWorker.main
