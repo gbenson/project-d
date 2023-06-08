@@ -75,6 +75,8 @@ def test_regular_packets(op):
             ("last_seen", 1686086875.268219),
             ("mac", "00:0d:f7:12:fe"),
             ("seen_by", "carla")]],
+        ["hset", "heartbeats", [
+            ("carla", 1686086875.268219)]],
         "execute"]
 
 
@@ -88,4 +90,6 @@ def test_unspecified_ipv4_not_stored():
             ("seen_by", "carla")]],
         ["hsetnx", "mac_00:0d:f7:12:fe", [
             ("first_seen", 1686086875.268219)]],
+        ["hset", "heartbeats", [
+            ("carla", 1686086875.268219)]],
         "execute"]

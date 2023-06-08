@@ -39,6 +39,7 @@ class ARPMonitorWorker(PacketSnifferWorker):
             ipv4_key = f"ipv4_{ipv4addr}"
             pipeline.hset(ipv4_key, "mac", macaddr, mapping=common)
 
+        pipeline.hset("heartbeats", "carla", recv_time)
         pipeline.execute()
 
     # Trying this on something with IFF_NOARP gets you the following:
