@@ -2,7 +2,7 @@ import logging
 
 from scapy.all import DHCP, Ether, IFACES, sniff
 
-from ..common import init_worker
+from ..common.logging import init_logging
 from ..services import Redis
 
 log = logging.getLogger(__name__)
@@ -140,7 +140,7 @@ class DHCPMonitorCallback:
 
 
 def main():
-    init_worker()
+    init_logging()
     log.info("Hi, I'm Daniel")
     interfaces = [name
                   for name, iface in IFACES.items()

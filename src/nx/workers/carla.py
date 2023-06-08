@@ -3,7 +3,7 @@ import logging
 from scapy.all import ARP, IFACES, sniff
 from scapy.arch.linux import IFF_NOARP
 
-from ..common import init_worker
+from ..common.logging import init_logging
 from ..services import Redis
 
 log = logging.getLogger(__name__)
@@ -53,7 +53,7 @@ def main():
     # rm .venv/bin/python3
     # cp -a /usr/bin/python3.10 .venv/bin/python3
     # sudo setcap cap_net_raw=eip .venv/bin/python3
-    init_worker()
+    init_logging()
     log.info("Hi, I'm Carla")
     interfaces = [name
                   for name, iface in IFACES.items()
