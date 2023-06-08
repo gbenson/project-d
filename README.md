@@ -24,7 +24,7 @@ Install in editable mode for development:
 ```sh
 pip install -e .[dev]
 ```
-Build wheels for deployment:
+Build a wheel for deployment:
 ```sh
-pip wheel --no-cache-dir "nx-workers @ file://$PWD/"
+pip wheel --no-cache-dir --no-deps "nx-workers @ file://$PWD/"
 ```
