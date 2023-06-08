@@ -10,6 +10,10 @@ class MockDatabase:
     def pipeline(self):
         return MockPipeline(self.log)
 
+    def hmget(self, *args):
+        self.log.append(["hmget", args])
+        return "5.6.7.8", 1686086874.682192
+
 
 class MockPipeline:
     def __init__(self, log):
@@ -47,7 +51,8 @@ class MockPacketDHCP:
 
 @dataclass
 class MockPacketEther:
-    src: str = "00:0d:f7:12:fe"
+    src: str = "00:0d:f7:12:ca:fe"
+    dst: str = "c8:e1:30:ba:be:23"
 
 
 class MockPacket(dict):
@@ -72,15 +77,50 @@ def test_request_stores_requested_ipv4():
         param_req_list=[1, 2, 3, 4, 5],
     ))
     assert worker.db.log == [
-        ["hset", "mac_00:0d:f7:12:fe", [
+        ["hset", "mac_00:0d:f7:12:ca:fe", [
             ("device_name", "Daniel's phone"),
             ("last_seen", 1686086875.268219),
             ("requested_ipv4", "1.2.3.4"),
             ("requested_ipv4_at", 1686086875.268219),
             ("seen_by", "daniel"),
             ("vendor_class_id", "Acme Phones Inc")]],
-        ["hsetnx", "mac_00:0d:f7:12:fe", [
+        ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
             ("first_seen", 1686086875.268219)]],
+        ["hset", "heartbeats", [
+            ("daniel", 1686086875.268219)]],
+        "execute"]
+
+
+def test_ack_retrieves_requested_ipv4():
+    """DHCPACK retrieves requested_ipv4."""
+    worker = DHCPMonitorWorker(MockDatabase())
+    worker.process_packet(MockPacket(
+        message_type=5,
+        server_id="4.3.2.1",
+    ))
+    assert worker.db.log == [
+        ["hset", "mac_00:0d:f7:12:ca:fe", [
+            ("ipv4", "4.3.2.1"),
+            ("last_seen", 1686086875.268219),
+            ("seen_by", "daniel")]],
+        ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
+            ("first_seen", 1686086875.268219)]],
+        ["hset", "ipv4_4.3.2.1", [
+            ("last_seen", 1686086875.268219),
+            ("mac", "00:0d:f7:12:ca:fe"),
+            ("seen_by", "daniel")]],
+        ["hmget", (
+            "mac_c8:e1:30:ba:be:23",
+            "requested_ipv4",
+            "requested_ipv4_at")],
+        ["hset", "mac_c8:e1:30:ba:be:23", [
+            ("ipv4", "5.6.7.8"),
+            ("last_seen", 1686086875.268219),
+            ("seen_by", "daniel")]],
+        ["hset", "ipv4_5.6.7.8", [
+            ("last_seen", 1686086875.268219),
+            ("mac", "c8:e1:30:ba:be:23"),
+            ("seen_by", "daniel")]],
         ["hset", "heartbeats", [
             ("daniel", 1686086875.268219)]],
         "execute"]

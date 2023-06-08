@@ -80,7 +80,8 @@ class DHCPMonitorWorker(PacketSnifferWorker):
     WANTED_PACKETS = "udp and (port 67 or port 68)"
 
     def process_packet(self, packet):
-        macaddr = packet.getlayer(Ether).src
+        ether_packet = packet.getlayer(Ether)
+        macaddr = ether_packet.src
         options = DHCPOptions(packet[DHCP].options)
         recv_time = packet.time
 
@@ -110,10 +111,38 @@ class DHCPMonitorWorker(PacketSnifferWorker):
             ipv4addr = options.server_id
             ipv4_key = f"ipv4_{ipv4addr}"
 
+            # server
             pipeline.hset(mac_key, "ipv4", ipv4addr, mapping=common)
             pipeline.hsetnx(mac_key, "first_seen", recv_time)
 
             pipeline.hset(ipv4_key, "mac", macaddr, mapping=common)
+
+            # client -- need to look up the ipv4 it just requested!
+            client_macaddr = ether_packet.dst
+            client_mac_key = f"mac_{client_macaddr}"
+            client_request = self.db.hmget(
+                client_mac_key,
+                "requested_ipv4",
+                "requested_ipv4_at"
+            )
+            if None not in client_request:
+                client_ipv4addr, request_time = client_request
+                if abs(recv_time - request_time) < 2:
+                    pipeline.hset(
+                        client_mac_key,
+                        "ipv4",
+                        client_ipv4addr,
+                        mapping=common,
+                    )
+                    # don't need first seen, we seen it for request
+
+                    client_ipv4_key = f"ipv4_{client_ipv4addr}"
+                    pipeline.hset(
+                        client_ipv4_key,
+                        "mac",
+                        client_macaddr,
+                        mapping=common,
+                    )
 
         elif options.message_type == 6:  # NAK (server->client)
             # nothing to see here (other than, macXXX is online)
