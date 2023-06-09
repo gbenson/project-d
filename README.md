@@ -22,9 +22,9 @@ pip install --upgrade pip setuptools
 ```
 Install in editable mode for development:
 ```sh
-pip install -e .[dev]
+make install
 ```
 Build a wheel for deployment:
 ```sh
-pip wheel --no-cache-dir --no-deps "nx-workers @ file://$PWD/"
+make wheel
 ```
