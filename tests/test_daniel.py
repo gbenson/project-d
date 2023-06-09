@@ -70,6 +70,9 @@ class MockPacket(dict):
     def getlayer(self, layer):
         return self._layers[layer]
 
+    def show(self, *args, **kwargs):
+        return ">>>decoded packet<<<"
+
 
 @pytest.mark.parametrize("extras", ((), ["end"] + ["pad"] * 4))
 def test_unhandled_message_handling(extras):
@@ -92,6 +95,7 @@ def test_unhandled_message_handling(extras):
             ("first_seen", 1686086875.268219)]],
         ["incr", ("next_raw_dhcp_id",)],
         ["hset", "raw_dhcp:23", [
+            ("decoded", ">>>decoded packet<<<"),
             ("mac", "00:0d:f7:12:ca:fe"),
             ("options",
              '[["message-type", 42],'
@@ -121,6 +125,7 @@ def test_request_stores_requested_ipv4():
     assert worker.db.log == [
         ["hset", "mac_00:0d:f7:12:ca:fe", [
             ("device_name", "Daniel's phone"),
+            ("last_DHCPREQUEST", ">>>decoded packet<<<"),
             ("last_DHCPREQUEST_options",
              '[["message-type", 3],'
              ' ["requested_addr", "1.2.3.4"],'
@@ -151,6 +156,7 @@ def test_ack_retrieves_requested_ipv4():
     assert worker.db.log == [
         ["hset", "mac_00:0d:f7:12:ca:fe", [
             ("ipv4", "4.3.2.1"),
+            ("last_DHCPACK", ">>>decoded packet<<<"),
             ("last_DHCPACK_options",
              '[["message-type", 5],'
              ' ["server_id", "4.3.2.1"]]'),
@@ -189,6 +195,7 @@ def test_nak():
     ))
     assert worker.db.log == [
         ["hset", "mac_00:0d:f7:12:ca:fe", [
+            ("last_DHCPNAK", ">>>decoded packet<<<"),
             ("last_DHCPNAK_options",
              '[["message-type", 6],'
              ' ["error_message", "go \'way fool"]]'),

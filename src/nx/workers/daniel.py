@@ -130,6 +130,10 @@ class DHCPMonitorWorker(PacketSnifferWorker):
         mac_fields = common_fields.copy()
         mac_fields.update({
             f"last_{typename}_seen": recv_time,
+            f"last_{typename}": packet.show(
+                indent=0,
+                dump=True
+            ).rstrip(),
             f"last_{typename}_options": options.as_json(),
         })
 
@@ -196,6 +200,7 @@ class DHCPMonitorWorker(PacketSnifferWorker):
 
         else:
             # Pull the last_DHCP* stuff out of mac_fields.
+            _decoded = mac_fields.pop(f"last_{typename}")
             _options = mac_fields.pop(f"last_{typename}_options")
             mac_fields.pop(f"last_{typename}_seen")
 
@@ -208,6 +213,7 @@ class DHCPMonitorWorker(PacketSnifferWorker):
             pipeline.hset(f"raw_dhcp:{next_raw_dhcp_id}", mapping={
                 "mac": macaddr,
                 "time": recv_time,
+                "decoded": _decoded,
                 "options": _options,
             })
 
