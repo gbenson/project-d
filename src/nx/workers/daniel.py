@@ -1,4 +1,6 @@
-from scapy.all import DHCP, Ether
+import json
+
+from scapy.all import DHCP, DHCPTypes, Ether
 
 from ..common import PacketSnifferWorker
 
@@ -36,12 +38,22 @@ class DHCPOptions:
         assert not self._unknown_options  # XXX
         assert not self._repeated_options  # XXX
 
+    @property
+    def message_type_name(self):
+        name = DHCPTypes.get(self.message_type, None)
+        if name is None:
+            name = f"_op{self.message_type}"
+        else:
+            name = "".join(name.split("_")).upper()
+        return f"DHCP{name}"
+
     def _load(self, options):
         for item in options:
             if not isinstance(item, str):
                 self._load_item(*item)
             elif item not in ("pad", "end"):
                 self._unknown_options.append(item)
+        self._raw_options = options
 
     DECODE = {
         "domain",
@@ -74,6 +86,31 @@ class DHCPOptions:
             return
         self._repeated_options.append((name, curr, args))
 
+    def as_json(self):
+        return json.dumps(self.as_list(), sort_keys=True)
+
+    def as_list(self):
+        result = list(map(self._sanitize_item, self._raw_options))
+        while result[-1] == "pad":
+            result.pop()
+        if result[-1] == "end":
+            result.pop()
+        return result
+
+    @classmethod
+    def _sanitize_item(cls, item):
+        """Try and make item JSON serializable."""
+        if isinstance(item, (list, tuple)):
+            return tuple(map(cls._sanitize_item, item))
+
+        if isinstance(item, bytes):
+            try:
+                return item.decode("utf-8")
+            except UnicodeDecodeError:
+                return tuple(map(int, item))
+
+        return item
+
 
 class DHCPMonitorWorker(PacketSnifferWorker):
     WORKER_NAME = "Daniel"
@@ -83,28 +120,33 @@ class DHCPMonitorWorker(PacketSnifferWorker):
         ether_packet = packet.getlayer(Ether)
         macaddr = ether_packet.src
         options = DHCPOptions(packet[DHCP].options)
+        typename = options.message_type_name
         recv_time = packet.time
 
         mac_key = f"mac_{macaddr}"
-        common = {
+        common_fields = {
             "last_seen": recv_time,
             "seen_by": "daniel",
         }
 
+        mac_fields = common_fields.copy()
+        mac_fields.update({
+            f"last_{typename}_seen": recv_time,
+            f"last_{typename}_options": options.as_json(),
+        })
+
         pipeline = self.db.pipeline()
 
         if options.message_type in (1, 3):  # DISCOVER, REQUEST
-            mac_mapping = common.copy()
-
             if options.hostname is not None:
-                mac_mapping["device_name"] = options.hostname
+                mac_fields["device_name"] = options.hostname
             if options.vendor_class_id is not None:
-                mac_mapping["vendor_class_id"] = options.vendor_class_id
+                mac_fields["vendor_class_id"] = options.vendor_class_id
             if options.requested_addr is not None:
-                mac_mapping["requested_ipv4"] = options.requested_addr
-                mac_mapping["requested_ipv4_at"] = recv_time
+                mac_fields["requested_ipv4"] = options.requested_addr
+                mac_fields["requested_ipv4_at"] = recv_time
 
-            pipeline.hset(mac_key, mapping=mac_mapping)
+            pipeline.hset(mac_key, mapping=mac_fields)
             pipeline.hsetnx(mac_key, "first_seen", recv_time)
 
         elif options.message_type == 5:  # ACK (server->client)
@@ -112,10 +154,10 @@ class DHCPMonitorWorker(PacketSnifferWorker):
             ipv4_key = f"ipv4_{ipv4addr}"
 
             # server
-            pipeline.hset(mac_key, "ipv4", ipv4addr, mapping=common)
+            pipeline.hset(mac_key, "ipv4", ipv4addr, mapping=mac_fields)
             pipeline.hsetnx(mac_key, "first_seen", recv_time)
 
-            pipeline.hset(ipv4_key, "mac", macaddr, mapping=common)
+            pipeline.hset(ipv4_key, "mac", macaddr, mapping=common_fields)
 
             # client -- need to look up the ipv4 it just requested!
             client_macaddr = ether_packet.dst
@@ -132,7 +174,7 @@ class DHCPMonitorWorker(PacketSnifferWorker):
                         client_mac_key,
                         "ipv4",
                         client_ipv4addr,
-                        mapping=common,
+                        mapping=common_fields,
                     )
                     # don't need first seen, we seen it for request
 
@@ -141,12 +183,12 @@ class DHCPMonitorWorker(PacketSnifferWorker):
                         client_ipv4_key,
                         "mac",
                         client_macaddr,
-                        mapping=common,
+                        mapping=common_fields,
                     )
 
         elif options.message_type == 6:  # NAK (server->client)
             # nothing to see here (other than, macXXX is online)
-            pipeline.hset(mac_key, mapping=common)
+            pipeline.hset(mac_key, mapping=mac_fields)
             pipeline.hsetnx(mac_key, "first_seen", recv_time)
 
         else:

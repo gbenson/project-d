@@ -79,6 +79,14 @@ def test_request_stores_requested_ipv4():
     assert worker.db.log == [
         ["hset", "mac_00:0d:f7:12:ca:fe", [
             ("device_name", "Daniel's phone"),
+            ("last_DHCPREQUEST_options",
+             '[["message-type", 3],'
+             ' ["requested_addr", "1.2.3.4"],'
+             ' ["max_dhcp_size", 1500],'
+             ' ["vendor_class_id", "Acme Phones Inc"],'
+             ' ["hostname", "Daniel\'s phone"],'
+             ' ["param_req_list", [1, 2, 3, 4, 5]]]'),
+            ("last_DHCPREQUEST_seen", 1686086875.268219),
             ("last_seen", 1686086875.268219),
             ("requested_ipv4", "1.2.3.4"),
             ("requested_ipv4_at", 1686086875.268219),
@@ -101,6 +109,10 @@ def test_ack_retrieves_requested_ipv4():
     assert worker.db.log == [
         ["hset", "mac_00:0d:f7:12:ca:fe", [
             ("ipv4", "4.3.2.1"),
+            ("last_DHCPACK_options",
+             '[["message-type", 5],'
+             ' ["server_id", "4.3.2.1"]]'),
+            ("last_DHCPACK_seen", 1686086875.268219),
             ("last_seen", 1686086875.268219),
             ("seen_by", "daniel")]],
         ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
