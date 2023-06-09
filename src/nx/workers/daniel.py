@@ -35,8 +35,6 @@ class DHCPOptions:
         self._repeated_options = []
 
         self._load(options)
-        assert not self._unknown_options  # XXX
-        assert not self._repeated_options  # XXX
 
     @property
     def message_type_name(self):
