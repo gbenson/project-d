@@ -1,3 +1,5 @@
+import pytest
+
 from dataclasses import dataclass
 
 from nx.workers.daniel import DHCP, DHCPMonitorWorker, Ether
@@ -13,6 +15,10 @@ class MockDatabase:
     def hmget(self, *args):
         self.log.append(["hmget", args])
         return "5.6.7.8", 1686086874.682192
+
+    def incr(self, *args):
+        self.log.append(["incr", args])
+        return 23
 
 
 class MockPipeline:
@@ -63,6 +69,42 @@ class MockPacket(dict):
 
     def getlayer(self, layer):
         return self._layers[layer]
+
+
+@pytest.mark.parametrize("extras", ((), ["end"] + ["pad"] * 4))
+def test_unhandled_message_handling(extras):
+    """Messages we don't understand are retained for analysis."""
+    worker = DHCPMonitorWorker(MockDatabase())
+    packet = MockPacket(
+        message_type=42,
+        max_dhcp_size=1500,
+        vendor_class_id=b"what ev er",
+        hostname=b"not-ascii-not-utf8\xff",
+        param_req_list=[1, 4, 15, 43, 25],
+    )
+    packet[DHCP].options.extend(extras)
+    worker.process_packet(packet)
+    assert worker.db.log == [
+        ["hset", "mac_00:0d:f7:12:ca:fe", [
+            ("last_seen", 1686086875.268219),
+            ("seen_by", "daniel")]],
+        ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
+            ("first_seen", 1686086875.268219)]],
+        ["incr", ("next_raw_dhcp_id",)],
+        ["hset", "raw_dhcp:23", [
+            ("mac", "00:0d:f7:12:ca:fe"),
+            ("options",
+             '[["message-type", 42],'
+             ' ["max_dhcp_size", 1500],'
+             ' ["vendor_class_id", "what ev er"],'
+             ' ["hostname",'
+             ' [110, 111, 116, 45, 97, 115, 99, 105, 105, 45,'
+             ' 110, 111, 116, 45, 117, 116, 102, 56, 255]],'
+             ' ["param_req_list", [1, 4, 15, 43, 25]]]'),
+            ("time", 1686086875.268219)]],
+        ["hset", "heartbeats", [
+            ("daniel", 1686086875.268219)]],
+        "execute"]
 
 
 def test_request_stores_requested_ipv4():

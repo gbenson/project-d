@@ -192,12 +192,21 @@ class DHCPMonitorWorker(PacketSnifferWorker):
             pipeline.hsetnx(mac_key, "first_seen", recv_time)
 
         else:
-            id = self.db.incr("next_raw_dhcp_id")
-            pipeline.hset(f"raw_dhcp:{id}",
-                          mapping={
-                              "mac": repr(macaddr),
-                              "time": recv_time,
-                              "options": repr(options)})
+            # Pull the last_DHCP* stuff out of mac_fields.
+            _options = mac_fields.pop(f"last_{typename}_options")
+            mac_fields.pop(f"last_{typename}_seen")
+
+            # Log the sighting.
+            pipeline.hset(mac_key, mapping=mac_fields)
+            pipeline.hsetnx(mac_key, "first_seen", recv_time)
+
+            # Retain this unhandled packet for future analysis.
+            next_raw_dhcp_id = self.db.incr("next_raw_dhcp_id")
+            pipeline.hset(f"raw_dhcp:{next_raw_dhcp_id}", mapping={
+                "mac": macaddr,
+                "time": recv_time,
+                "options": _options,
+            })
 
         pipeline.hset("heartbeats", "daniel", recv_time)
         pipeline.execute()
