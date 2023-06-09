@@ -178,3 +178,25 @@ def test_ack_retrieves_requested_ipv4():
         ["hset", "heartbeats", [
             ("daniel", 1686086875.268219)]],
         "execute"]
+
+
+def test_nak():
+    """DHCPNAK is logged as expected."""
+    worker = DHCPMonitorWorker(MockDatabase())
+    worker.process_packet(MockPacket(
+        message_type=6,
+        error_message=b"go 'way fool",
+    ))
+    assert worker.db.log == [
+        ["hset", "mac_00:0d:f7:12:ca:fe", [
+            ("last_DHCPNAK_options",
+             '[["message-type", 6],'
+             ' ["error_message", "go \'way fool"]]'),
+            ("last_DHCPNAK_seen", 1686086875.268219),
+            ("last_seen", 1686086875.268219),
+            ("seen_by", "daniel")]],
+        ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
+            ("first_seen", 1686086875.268219)]],
+        ["hset", "heartbeats", [
+            ("daniel", 1686086875.268219)]],
+        "execute"]
