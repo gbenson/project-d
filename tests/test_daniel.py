@@ -14,7 +14,7 @@ class MockDatabase:
 
     def hmget(self, *args):
         self.log.append(["hmget", args])
-        return "5.6.7.8", 1686086874.682192
+        return b"5.6.7.8", b"1686086874.682192"
 
     def incr(self, *args):
         self.log.append(["incr", args])

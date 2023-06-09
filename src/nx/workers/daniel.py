@@ -168,7 +168,12 @@ class DHCPMonitorWorker(PacketSnifferWorker):
                 "requested_ipv4_at"
             )
             if None not in client_request:
-                client_ipv4addr, request_time = client_request
+                client_ipv4addr, request_time = (
+                    (field.decode("ascii")
+                     if isinstance(field, bytes)
+                     else field)
+                    for field in client_request)
+                request_time = float(request_time)
                 if abs(recv_time - request_time) < 2:
                     pipeline.hset(
                         client_mac_key,
