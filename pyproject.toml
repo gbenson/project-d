@@ -9,6 +9,7 @@ dynamic = ["version"]
 [project.optional-dependencies]
 dev = [
     "flake8",
+    "paramiko",
     "pytest",
 ]
 
