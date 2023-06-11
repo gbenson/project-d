@@ -128,6 +128,7 @@ class DHCPMonitorWorker(PacketSnifferWorker):
             # server
             pipeline.hset(mac_key, "ipv4", ipv4addr)
             pipeline.hset(ipv4_key, "mac", macaddr, mapping=common_fields)
+            pipeline.hdel(ipv4_key, "seen_by")  # XXX temp cleanup code
 
             # client -- need to look up the ipv4 it just requested!
             client_macaddr = packet[Ether].dst
@@ -151,6 +152,7 @@ class DHCPMonitorWorker(PacketSnifferWorker):
                         client_ipv4addr,
                         mapping=common_fields,
                     )
+                    pipeline.hdel(client_mac_key, "seen_by")  # XXX temp
                     # don't need first seen, we seen it for request
 
                     client_ipv4_key = f"ipv4_{client_ipv4addr}"
@@ -160,6 +162,7 @@ class DHCPMonitorWorker(PacketSnifferWorker):
                         client_macaddr,
                         mapping=common_fields,
                     )
+                    pipeline.hdel(client_ipv4_key, "seen_by")  # XXX temp
 
 
 main = DHCPMonitorWorker.main

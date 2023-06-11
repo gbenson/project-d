@@ -82,7 +82,7 @@ class PacketSnifferWorker(Worker):
 
         common_fields = {
             "last_seen": packet.time,
-            "seen_by": self._worker_name,
+            "last_seen_by": self._worker_name,
             f"last_seen_by_{self._worker_name}": packet.time,
         }
 
@@ -99,6 +99,7 @@ class PacketSnifferWorker(Worker):
         pipeline = self.db.pipeline()
 
         pipeline.hset(packet_key, mapping=packet_fields)
+        pipeline.hdel(packet_key, "seen_by")  # XXX temp cleanup code
         pipeline.hsetnx(packet_key, "first_seen", packet.time)
         pipeline.hincrby(packet_key, "num_sightings", 1)
 
@@ -106,6 +107,7 @@ class PacketSnifferWorker(Worker):
         mac_key = f"mac_{macaddr}"
 
         pipeline.hset(mac_key, mapping=common_fields)
+        pipeline.hdel(mac_key, "seen_by")  # XXX temp cleanup code
         pipeline.hsetnx(mac_key, "first_seen", packet.time)
 
         pipeline.hset(f"macpkts_{macaddr}", packet_hash, packet.time)

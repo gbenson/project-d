@@ -18,6 +18,9 @@ class MockPipeline:
     def __init__(self, log):
         self.log = log
 
+    def hdel(self, *args):
+        self.log.append(["hdel", *args])
+
     def hincrby(self, *args):
         self.log.append(["hincrby", args])
         return 23
@@ -32,6 +35,9 @@ class MockPipeline:
         args = mapping.copy()
         if None not in (key, value):
             args.update({key: value})
+        last_seen_by = args.pop("last_seen_by", None)  # XXX
+        if last_seen_by is not None:
+            args["seen_by"] = last_seen_by
         self.log.append([cmd, name, list(sorted(args.items()))])
 
     def execute(self):
@@ -76,6 +82,7 @@ def test_unhandled_arp_packet():
             ("raw_bytes", b">>raw bytes<<"),
             ("seen_by", "carla"),
         ]],
+        ["hdel", PKTKEY, "seen_by"],
         ["hsetnx", PKTKEY, [
             ("first_seen", 1686086875.268219),
         ]],
@@ -85,6 +92,7 @@ def test_unhandled_arp_packet():
             ("last_seen_by_carla", 1686086875.268219),
             ("seen_by", "carla"),
         ]],
+        ["hdel", "mac_00:0d:f7:12:ca:fe", "seen_by"],
         ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
             ("first_seen", 1686086875.268219),
         ]],
@@ -110,6 +118,7 @@ def test_regular_packets(op):
             ("raw_bytes", b">>raw bytes<<"),
             ("seen_by", "carla"),
         ]],
+        ["hdel", PKTKEY, "seen_by"],
         ["hsetnx", PKTKEY, [
             ("first_seen", 1686086875.268219),
         ]],
@@ -119,6 +128,7 @@ def test_regular_packets(op):
             ("last_seen_by_carla", 1686086875.268219),
             ("seen_by", "carla"),
         ]],
+        ["hdel", "mac_00:0d:f7:12:ca:fe", "seen_by"],
         ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
             ("first_seen", 1686086875.268219),
         ]],
@@ -134,6 +144,7 @@ def test_regular_packets(op):
             ("mac", "00:0d:f7:12:ca:fe"),
             ("seen_by", "carla"),
         ]],
+        ["hdel", "ipv4_1.2.3.4", "seen_by"],
         ["hset", "heartbeats", [
             ("carla", 1686086875.268219),
         ]],
@@ -152,6 +163,7 @@ def test_unspecified_ipv4_not_stored():
             ("raw_bytes", b">>raw bytes<<"),
             ("seen_by", "carla"),
         ]],
+        ["hdel", PKTKEY, "seen_by"],
         ["hsetnx", PKTKEY, [
             ("first_seen", 1686086875.268219),
         ]],
@@ -161,6 +173,7 @@ def test_unspecified_ipv4_not_stored():
             ("last_seen_by_carla", 1686086875.268219),
             ("seen_by", "carla"),
         ]],
+        ["hdel", "mac_00:0d:f7:12:ca:fe", "seen_by"],
         ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
             ("first_seen", 1686086875.268219),
         ]],

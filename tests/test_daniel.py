@@ -42,6 +42,9 @@ class MockPipeline:
         args = mapping.copy()
         if None not in (key, value):
             args.update({key: value})
+        last_seen_by = args.pop("last_seen_by", None)  # XXX
+        if last_seen_by is not None:
+            args["seen_by"] = last_seen_by
         self.log.append([cmd, name, list(sorted(args.items()))])
 
     def execute(self):
@@ -101,6 +104,7 @@ def test_unhandled_message_handling(extras):
             ("raw_bytes", b">>raw bytes<<"),
             ("seen_by", "daniel"),
         ]],
+        ["hdel", PKTKEY, "seen_by"],
         ["hsetnx", PKTKEY, [
             ("first_seen", 1686086875.268219),
         ]],
@@ -110,6 +114,7 @@ def test_unhandled_message_handling(extras):
             ("last_seen_by_daniel", 1686086875.268219),
             ("seen_by", "daniel"),
         ]],
+        ["hdel", "mac_00:0d:f7:12:ca:fe", "seen_by"],
         ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
             ("first_seen", 1686086875.268219),
         ]],
@@ -146,6 +151,7 @@ def test_request_stores_requested_ipv4():
             ("raw_bytes", b">>raw bytes<<"),
             ("seen_by", "daniel"),
         ]],
+        ["hdel", PKTKEY, "seen_by"],
         ["hsetnx", PKTKEY, [
             ("first_seen", 1686086875.268219),
         ]],
@@ -155,6 +161,7 @@ def test_request_stores_requested_ipv4():
             ("last_seen_by_daniel", 1686086875.268219),
             ("seen_by", "daniel"),
         ]],
+        ["hdel", "mac_00:0d:f7:12:ca:fe", "seen_by"],
         ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
             ("first_seen", 1686086875.268219),
         ]],
@@ -191,6 +198,7 @@ def test_ack_retrieves_requested_ipv4():
             ("raw_bytes", b">>raw bytes<<"),
             ("seen_by", "daniel"),
         ]],
+        ["hdel", PKTKEY, "seen_by"],
         ["hsetnx", PKTKEY, [
             ("first_seen", 1686086875.268219),
         ]],
@@ -200,6 +208,7 @@ def test_ack_retrieves_requested_ipv4():
             ("last_seen_by_daniel", 1686086875.268219),
             ("seen_by", "daniel"),
         ]],
+        ["hdel", "mac_00:0d:f7:12:ca:fe", "seen_by"],
         ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
             ("first_seen", 1686086875.268219),
         ]],
@@ -220,6 +229,7 @@ def test_ack_retrieves_requested_ipv4():
             ("mac", "00:0d:f7:12:ca:fe"),
             ("seen_by", "daniel"),
         ]],
+        ["hdel", "ipv4_4.3.2.1", "seen_by"],
         ["hmget", (
             "mac_c8:e1:30:ba:be:23",
             "requested_ipv4",
@@ -230,12 +240,14 @@ def test_ack_retrieves_requested_ipv4():
             ("last_seen_by_daniel", 1686086875.268219),
             ("seen_by", "daniel"),
         ]],
+        ["hdel", "mac_c8:e1:30:ba:be:23", "seen_by"],
         ["hset", "ipv4_5.6.7.8", [
             ("last_seen", 1686086875.268219),
             ("last_seen_by_daniel", 1686086875.268219),
             ("mac", "c8:e1:30:ba:be:23"),
             ("seen_by", "daniel"),
         ]],
+        ["hdel", "ipv4_5.6.7.8", "seen_by"],
         ["hset", "heartbeats", [
             ("daniel", 1686086875.268219),
         ]],
@@ -257,6 +269,7 @@ def test_nak():
             ("raw_bytes", b">>raw bytes<<"),
             ("seen_by", "daniel"),
         ]],
+        ["hdel", PKTKEY, "seen_by"],
         ["hsetnx", PKTKEY, [
             ("first_seen", 1686086875.268219),
         ]],
@@ -266,6 +279,7 @@ def test_nak():
             ("last_seen_by_daniel", 1686086875.268219),
             ("seen_by", "daniel"),
         ]],
+        ["hdel", "mac_00:0d:f7:12:ca:fe", "seen_by"],
         ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
             ("first_seen", 1686086875.268219),
         ]],
