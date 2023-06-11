@@ -11,6 +11,7 @@ dev = [
     "flake8",
     "paramiko",
     "pytest",
+    "pytest-cov",
 ]
 
 [project.scripts]

@@ -1,5 +1,3 @@
-import json
-
 from scapy.all import DHCP, DHCPTypes, Ether
 
 from ..common import PacketSnifferWorker
@@ -83,31 +81,6 @@ class DHCPOptions:
             self._unknown_options.append((name, args))
             return
         self._repeated_options.append((name, curr, args))
-
-    def as_json(self):
-        return json.dumps(self.as_list(), sort_keys=True)
-
-    def as_list(self):
-        result = list(map(self._sanitize_item, self._raw_options))
-        while result[-1] == "pad":
-            result.pop()
-        if result[-1] == "end":
-            result.pop()
-        return result
-
-    @classmethod
-    def _sanitize_item(cls, item):
-        """Try and make item JSON serializable."""
-        if isinstance(item, (list, tuple)):
-            return tuple(map(cls._sanitize_item, item))
-
-        if isinstance(item, bytes):
-            try:
-                return item.decode("utf-8")
-            except UnicodeDecodeError:
-                return tuple(map(int, item))
-
-        return item
 
 
 class DHCPMonitorWorker(PacketSnifferWorker):

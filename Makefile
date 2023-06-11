@@ -1,5 +1,5 @@
 test:
-	flake8 && pytest
+	flake8 && pytest --cov=nx
 
 check: test
 

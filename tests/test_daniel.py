@@ -72,12 +72,6 @@ class MockPacket(dict):
         self.time = 1686086875.268219
         self.original = b">>raw bytes<<"
 
-    def getlayer(self, layer):
-        return self[layer]
-
-    def show(self, *args, **kwargs):
-        return ">>>decoded packet<<<"
-
 
 PKTHASH = "a94633760744dc5894cf1d00e74ec2353be937698580bb2141efda3131915ee5"
 PKTKEY = f"pkt_{PKTHASH}"
