@@ -125,10 +125,9 @@ class DHCPMonitorWorker(PacketSnifferWorker):
     ):
         options = DHCPOptions(packet[DHCP].options)
         typename = options.message_type_name
-        recv_time = packet.time
 
         mac_fields = {
-            f"last_{typename}_seen": recv_time,
+            f"last_{typename}_seen": packet.time,
             f"last_{typename}": packet.show(
                 indent=0,
                 dump=True
@@ -143,7 +142,7 @@ class DHCPMonitorWorker(PacketSnifferWorker):
                 mac_fields["vendor_class_id"] = options.vendor_class_id
             if options.requested_addr is not None:
                 mac_fields["requested_ipv4"] = options.requested_addr
-                mac_fields["requested_ipv4_at"] = recv_time
+                mac_fields["requested_ipv4_at"] = packet.time
 
             pipeline.hset(mac_key, mapping=mac_fields)
 
@@ -170,7 +169,7 @@ class DHCPMonitorWorker(PacketSnifferWorker):
                      else field)
                     for field in client_request)
                 request_time = float(request_time)
-                if abs(recv_time - request_time) < 2:
+                if abs(packet.time - request_time) < 2:
                     pipeline.hset(
                         client_mac_key,
                         "ipv4",
@@ -196,7 +195,7 @@ class DHCPMonitorWorker(PacketSnifferWorker):
             next_raw_dhcp_id = self.db.incr("next_raw_dhcp_id")
             pipeline.hset(f"raw_dhcp:{next_raw_dhcp_id}", mapping={
                 "mac": macaddr,
-                "time": recv_time,
+                "time": packet.time,
                 "decoded": mac_fields[f"last_{typename}"],
                 "options": mac_fields[f"last_{typename}_options"],
             })
