@@ -108,7 +108,7 @@ class PacketSnifferWorker(Worker):
         pipeline.hset(mac_key, mapping=common_fields)
         pipeline.hsetnx(mac_key, "first_seen", packet.time)
 
-        pipeline.hset(f"{mac_key}_packets", packet_hash, packet.time)
+        pipeline.hset(f"macpkts_{macaddr}", packet_hash, packet.time)
 
         # Hand over to worker-specific code.
         try:

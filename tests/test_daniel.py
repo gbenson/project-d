@@ -116,7 +116,7 @@ def test_unhandled_message_handling(extras):
         ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
             ("first_seen", 1686086875.268219),
         ]],
-        ["hset", "mac_00:0d:f7:12:ca:fe_packets", [
+        ["hset", "macpkts_00:0d:f7:12:ca:fe", [
             (PKTHASH, 1686086875.268219),
         ]],
         ["incr", ("next_raw_dhcp_id",)],
@@ -169,7 +169,7 @@ def test_request_stores_requested_ipv4():
         ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
             ("first_seen", 1686086875.268219),
         ]],
-        ["hset", "mac_00:0d:f7:12:ca:fe_packets", [
+        ["hset", "macpkts_00:0d:f7:12:ca:fe", [
             (PKTHASH, 1686086875.268219),
         ]],
         ["hset", "mac_00:0d:f7:12:ca:fe", [
@@ -218,7 +218,7 @@ def test_ack_retrieves_requested_ipv4():
         ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
             ("first_seen", 1686086875.268219),
         ]],
-        ["hset", "mac_00:0d:f7:12:ca:fe_packets", [
+        ["hset", "macpkts_00:0d:f7:12:ca:fe", [
             (PKTHASH, 1686086875.268219),
         ]],
         ["hset", "mac_00:0d:f7:12:ca:fe", [
@@ -284,7 +284,7 @@ def test_nak():
         ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
             ("first_seen", 1686086875.268219),
         ]],
-        ["hset", "mac_00:0d:f7:12:ca:fe_packets", [
+        ["hset", "macpkts_00:0d:f7:12:ca:fe", [
             (PKTHASH, 1686086875.268219),
         ]],
         ["hset", "mac_00:0d:f7:12:ca:fe", [

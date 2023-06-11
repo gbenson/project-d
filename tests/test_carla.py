@@ -88,7 +88,7 @@ def test_unhandled_arp_packet():
         ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
             ("first_seen", 1686086875.268219),
         ]],
-        ["hset", "mac_00:0d:f7:12:ca:fe_packets", [
+        ["hset", "macpkts_00:0d:f7:12:ca:fe", [
             (PKTHASH, 1686086875.268219),
         ]],
         ["hset", "heartbeats", [
@@ -122,7 +122,7 @@ def test_regular_packets(op):
         ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
             ("first_seen", 1686086875.268219),
         ]],
-        ["hset", "mac_00:0d:f7:12:ca:fe_packets", [
+        ["hset", "macpkts_00:0d:f7:12:ca:fe", [
             (PKTHASH, 1686086875.268219),
         ]],
         ["hset", "mac_00:0d:f7:12:ca:fe", [
@@ -164,7 +164,7 @@ def test_unspecified_ipv4_not_stored():
         ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
             ("first_seen", 1686086875.268219),
         ]],
-        ["hset", "mac_00:0d:f7:12:ca:fe_packets", [
+        ["hset", "macpkts_00:0d:f7:12:ca:fe", [
             (PKTHASH, 1686086875.268219),
         ]],
         ["hset", "heartbeats", [
