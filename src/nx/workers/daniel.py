@@ -120,22 +120,21 @@ class DHCPMonitorWorker(PacketSnifferWorker):
             pipeline,
             macaddr,
             mac_key,
+            packet_hash,
             common_fields,
             **kwargs
     ):
         options = DHCPOptions(packet[DHCP].options)
         typename = options.message_type_name
 
-        mac_fields = {
+        pipeline.hset(mac_key, mapping={
+            f"last_{typename}": packet_hash,
             f"last_{typename}_seen": packet.time,
-            f"last_{typename}": packet.show(
-                indent=0,
-                dump=True
-            ).rstrip(),
-            f"last_{typename}_options": options.as_json(),
-        }
+        })
 
         if options.message_type in (1, 3):  # DISCOVER, REQUEST
+            mac_fields = {}
+
             if options.hostname is not None:
                 mac_fields["device_name"] = options.hostname
             if options.vendor_class_id is not None:
@@ -151,7 +150,7 @@ class DHCPMonitorWorker(PacketSnifferWorker):
             ipv4_key = f"ipv4_{ipv4addr}"
 
             # server
-            pipeline.hset(mac_key, "ipv4", ipv4addr, mapping=mac_fields)
+            pipeline.hset(mac_key, "ipv4", ipv4addr)
             pipeline.hset(ipv4_key, "mac", macaddr, mapping=common_fields)
 
             # client -- need to look up the ipv4 it just requested!
@@ -185,20 +184,6 @@ class DHCPMonitorWorker(PacketSnifferWorker):
                         client_macaddr,
                         mapping=common_fields,
                     )
-
-        elif options.message_type == 6:  # NAK (server->client)
-            # nothing to see here (other than, macXXX is online)
-            pipeline.hset(mac_key, mapping=mac_fields)
-
-        else:
-            # Retain this unhandled packet for future analysis.
-            next_raw_dhcp_id = self.db.incr("next_raw_dhcp_id")
-            pipeline.hset(f"raw_dhcp:{next_raw_dhcp_id}", mapping={
-                "mac": macaddr,
-                "time": packet.time,
-                "decoded": mac_fields[f"last_{typename}"],
-                "options": mac_fields[f"last_{typename}_options"],
-            })
 
 
 main = DHCPMonitorWorker.main
