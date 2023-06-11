@@ -25,6 +25,9 @@ class MockPipeline:
     def __init__(self, log):
         self.log = log
 
+    def hdel(self, *args):
+        self.log.append(["hdel", *args])
+
     def hincrby(self, *args):
         self.log.append(["hincrby", args])
         return 23
@@ -117,6 +120,7 @@ def test_unhandled_message_handling(extras):
             ("last_DHCP_op42", PKTHASH),
             ("last_DHCP_op42_seen", 1686086875.268219),
         ]],
+        ["hdel", "mac_00:0d:f7:12:ca:fe", "last_DHCP_op42_options"],
         ["hset", "heartbeats", [
             ("daniel", 1686086875.268219),
         ]],
@@ -161,6 +165,7 @@ def test_request_stores_requested_ipv4():
             ("last_DHCPREQUEST", PKTHASH),
             ("last_DHCPREQUEST_seen", 1686086875.268219),
         ]],
+        ["hdel", "mac_00:0d:f7:12:ca:fe", "last_DHCPREQUEST_options"],
         ["hset", "mac_00:0d:f7:12:ca:fe", [
             ("device_name", "Daniel's phone"),
             ("requested_ipv4", "1.2.3.4"),
@@ -205,6 +210,7 @@ def test_ack_retrieves_requested_ipv4():
             ("last_DHCPACK", PKTHASH),
             ("last_DHCPACK_seen", 1686086875.268219),
         ]],
+        ["hdel", "mac_00:0d:f7:12:ca:fe", "last_DHCPACK_options"],
         ["hset", "mac_00:0d:f7:12:ca:fe", [
             ("ipv4", "4.3.2.1"),
         ]],
@@ -270,6 +276,7 @@ def test_nak():
             ("last_DHCPNAK", PKTHASH),
             ("last_DHCPNAK_seen", 1686086875.268219),
         ]],
+        ["hdel", "mac_00:0d:f7:12:ca:fe", "last_DHCPNAK_options"],
         ["hset", "heartbeats", [
             ("daniel", 1686086875.268219),
         ]],

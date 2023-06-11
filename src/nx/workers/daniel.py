@@ -105,6 +105,9 @@ class DHCPMonitorWorker(PacketSnifferWorker):
             f"last_{typename}_seen": packet.time,
         })
 
+        # XXX Temporary database cleanup code XXX
+        pipeline.hdel(mac_key, f"last_{typename}_options")
+
         if options.message_type in (1, 3):  # DISCOVER, REQUEST
             mac_fields = {}
 
