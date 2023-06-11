@@ -25,6 +25,10 @@ class MockPipeline:
     def __init__(self, log):
         self.log = log
 
+    def hincrby(self, *args):
+        self.log.append(["hincrby", args])
+        return 23
+
     def hset(self, *args, **kwargs):
         self._hset("hset", *args, **kwargs)
 
@@ -63,15 +67,20 @@ class MockPacketEther:
 
 class MockPacket(dict):
     def __init__(self, **kwargs):
-        self._layers = {Ether: MockPacketEther()}
+        self[Ether] = MockPacketEther()
         self[DHCP] = MockPacketDHCP(**kwargs)
         self.time = 1686086875.268219
+        self.original = b">>raw bytes<<"
 
     def getlayer(self, layer):
-        return self._layers[layer]
+        return self[layer]
 
     def show(self, *args, **kwargs):
         return ">>>decoded packet<<<"
+
+
+PKTHASH = "a94633760744dc5894cf1d00e74ec2353be937698580bb2141efda3131915ee5"
+PKTKEY = f"pkt_{PKTHASH}"
 
 
 @pytest.mark.parametrize("extras", ((), ["end"] + ["pad"] * 4))
@@ -86,13 +95,30 @@ def test_unhandled_message_handling(extras):
         param_req_list=[1, 4, 15, 43, 25],
     )
     packet[DHCP].options.extend(extras)
-    worker.process_packet(packet)
+    worker._process_packet(packet)
     assert worker.db.log == [
+        ["hset", PKTKEY, [
+            ("last_seen", 1686086875.268219),
+            ("last_seen_by_daniel", 1686086875.268219),
+            ("last_seen_from", "00:0d:f7:12:ca:fe"),
+            ("raw_bytes", b">>raw bytes<<"),
+            ("seen_by", "daniel"),
+        ]],
+        ["hsetnx", PKTKEY, [
+            ("first_seen", 1686086875.268219),
+        ]],
+        ["hincrby", (PKTKEY, "num_sightings", 1)],
         ["hset", "mac_00:0d:f7:12:ca:fe", [
             ("last_seen", 1686086875.268219),
-            ("seen_by", "daniel")]],
+            ("last_seen_by_daniel", 1686086875.268219),
+            ("seen_by", "daniel"),
+        ]],
         ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
-            ("first_seen", 1686086875.268219)]],
+            ("first_seen", 1686086875.268219),
+        ]],
+        ["hset", "mac_00:0d:f7:12:ca:fe_packets", [
+            (PKTHASH, 1686086875.268219),
+        ]],
         ["incr", ("next_raw_dhcp_id",)],
         ["hset", "raw_dhcp:23", [
             ("decoded", ">>>decoded packet<<<"),
@@ -107,14 +133,15 @@ def test_unhandled_message_handling(extras):
              ' ["param_req_list", [1, 4, 15, 43, 25]]]'),
             ("time", 1686086875.268219)]],
         ["hset", "heartbeats", [
-            ("daniel", 1686086875.268219)]],
+            ("daniel", 1686086875.268219),
+        ]],
         "execute"]
 
 
 def test_request_stores_requested_ipv4():
     """DHCPREQUEST stores requested_ipv4."""
     worker = DHCPMonitorWorker(MockDatabase())
-    worker.process_packet(MockPacket(
+    worker._process_packet(MockPacket(
         message_type=3,
         requested_addr="1.2.3.4",
         max_dhcp_size=1500,
@@ -123,6 +150,28 @@ def test_request_stores_requested_ipv4():
         param_req_list=[1, 2, 3, 4, 5],
     ))
     assert worker.db.log == [
+        ["hset", PKTKEY, [
+            ("last_seen", 1686086875.268219),
+            ("last_seen_by_daniel", 1686086875.268219),
+            ("last_seen_from", "00:0d:f7:12:ca:fe"),
+            ("raw_bytes", b">>raw bytes<<"),
+            ("seen_by", "daniel"),
+        ]],
+        ["hsetnx", PKTKEY, [
+            ("first_seen", 1686086875.268219),
+        ]],
+        ["hincrby", (PKTKEY, "num_sightings", 1)],
+        ["hset", "mac_00:0d:f7:12:ca:fe", [
+            ("last_seen", 1686086875.268219),
+            ("last_seen_by_daniel", 1686086875.268219),
+            ("seen_by", "daniel"),
+        ]],
+        ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
+            ("first_seen", 1686086875.268219),
+        ]],
+        ["hset", "mac_00:0d:f7:12:ca:fe_packets", [
+            (PKTHASH, 1686086875.268219),
+        ]],
         ["hset", "mac_00:0d:f7:12:ca:fe", [
             ("device_name", "Daniel's phone"),
             ("last_DHCPREQUEST", ">>>decoded packet<<<"),
@@ -134,13 +183,9 @@ def test_request_stores_requested_ipv4():
              ' ["hostname", "Daniel\'s phone"],'
              ' ["param_req_list", [1, 2, 3, 4, 5]]]'),
             ("last_DHCPREQUEST_seen", 1686086875.268219),
-            ("last_seen", 1686086875.268219),
             ("requested_ipv4", "1.2.3.4"),
             ("requested_ipv4_at", 1686086875.268219),
-            ("seen_by", "daniel"),
             ("vendor_class_id", "Acme Phones Inc")]],
-        ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
-            ("first_seen", 1686086875.268219)]],
         ["hset", "heartbeats", [
             ("daniel", 1686086875.268219)]],
         "execute"]
@@ -149,11 +194,33 @@ def test_request_stores_requested_ipv4():
 def test_ack_retrieves_requested_ipv4():
     """DHCPACK retrieves requested_ipv4."""
     worker = DHCPMonitorWorker(MockDatabase())
-    worker.process_packet(MockPacket(
+    worker._process_packet(MockPacket(
         message_type=5,
         server_id="4.3.2.1",
     ))
     assert worker.db.log == [
+        ["hset", PKTKEY, [
+            ("last_seen", 1686086875.268219),
+            ("last_seen_by_daniel", 1686086875.268219),
+            ("last_seen_from", "00:0d:f7:12:ca:fe"),
+            ("raw_bytes", b">>raw bytes<<"),
+            ("seen_by", "daniel"),
+        ]],
+        ["hsetnx", PKTKEY, [
+            ("first_seen", 1686086875.268219),
+        ]],
+        ["hincrby", (PKTKEY, "num_sightings", 1)],
+        ["hset", "mac_00:0d:f7:12:ca:fe", [
+            ("last_seen", 1686086875.268219),
+            ("last_seen_by_daniel", 1686086875.268219),
+            ("seen_by", "daniel"),
+        ]],
+        ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
+            ("first_seen", 1686086875.268219),
+        ]],
+        ["hset", "mac_00:0d:f7:12:ca:fe_packets", [
+            (PKTHASH, 1686086875.268219),
+        ]],
         ["hset", "mac_00:0d:f7:12:ca:fe", [
             ("ipv4", "4.3.2.1"),
             ("last_DHCPACK", ">>>decoded packet<<<"),
@@ -161,14 +228,13 @@ def test_ack_retrieves_requested_ipv4():
              '[["message-type", 5],'
              ' ["server_id", "4.3.2.1"]]'),
             ("last_DHCPACK_seen", 1686086875.268219),
-            ("last_seen", 1686086875.268219),
-            ("seen_by", "daniel")]],
-        ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
-            ("first_seen", 1686086875.268219)]],
+        ]],
         ["hset", "ipv4_4.3.2.1", [
             ("last_seen", 1686086875.268219),
+            ("last_seen_by_daniel", 1686086875.268219),
             ("mac", "00:0d:f7:12:ca:fe"),
-            ("seen_by", "daniel")]],
+            ("seen_by", "daniel"),
+        ]],
         ["hmget", (
             "mac_c8:e1:30:ba:be:23",
             "requested_ipv4",
@@ -176,34 +242,59 @@ def test_ack_retrieves_requested_ipv4():
         ["hset", "mac_c8:e1:30:ba:be:23", [
             ("ipv4", "5.6.7.8"),
             ("last_seen", 1686086875.268219),
-            ("seen_by", "daniel")]],
+            ("last_seen_by_daniel", 1686086875.268219),
+            ("seen_by", "daniel"),
+        ]],
         ["hset", "ipv4_5.6.7.8", [
             ("last_seen", 1686086875.268219),
+            ("last_seen_by_daniel", 1686086875.268219),
             ("mac", "c8:e1:30:ba:be:23"),
-            ("seen_by", "daniel")]],
+            ("seen_by", "daniel"),
+        ]],
         ["hset", "heartbeats", [
-            ("daniel", 1686086875.268219)]],
+            ("daniel", 1686086875.268219),
+        ]],
         "execute"]
 
 
 def test_nak():
     """DHCPNAK is logged as expected."""
     worker = DHCPMonitorWorker(MockDatabase())
-    worker.process_packet(MockPacket(
+    worker._process_packet(MockPacket(
         message_type=6,
         error_message=b"go 'way fool",
     ))
     assert worker.db.log == [
+        ["hset", PKTKEY, [
+            ("last_seen", 1686086875.268219),
+            ("last_seen_by_daniel", 1686086875.268219),
+            ("last_seen_from", "00:0d:f7:12:ca:fe"),
+            ("raw_bytes", b">>raw bytes<<"),
+            ("seen_by", "daniel"),
+        ]],
+        ["hsetnx", PKTKEY, [
+            ("first_seen", 1686086875.268219),
+        ]],
+        ["hincrby", (PKTKEY, "num_sightings", 1)],
+        ["hset", "mac_00:0d:f7:12:ca:fe", [
+            ("last_seen", 1686086875.268219),
+            ("last_seen_by_daniel", 1686086875.268219),
+            ("seen_by", "daniel"),
+        ]],
+        ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
+            ("first_seen", 1686086875.268219),
+        ]],
+        ["hset", "mac_00:0d:f7:12:ca:fe_packets", [
+            (PKTHASH, 1686086875.268219),
+        ]],
         ["hset", "mac_00:0d:f7:12:ca:fe", [
             ("last_DHCPNAK", ">>>decoded packet<<<"),
             ("last_DHCPNAK_options",
              '[["message-type", 6],'
              ' ["error_message", "go \'way fool"]]'),
             ("last_DHCPNAK_seen", 1686086875.268219),
-            ("last_seen", 1686086875.268219),
-            ("seen_by", "daniel")]],
-        ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
-            ("first_seen", 1686086875.268219)]],
+        ]],
         ["hset", "heartbeats", [
-            ("daniel", 1686086875.268219)]],
+            ("daniel", 1686086875.268219),
+        ]],
         "execute"]

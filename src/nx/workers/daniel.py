@@ -114,30 +114,27 @@ class DHCPMonitorWorker(PacketSnifferWorker):
     WORKER_NAME = "Daniel"
     WANTED_PACKETS = "udp and (port 67 or port 68)"
 
-    def process_packet(self, packet):
-        ether_packet = packet.getlayer(Ether)
-        macaddr = ether_packet.src
+    def process_packet(
+            self,
+            packet,
+            pipeline,
+            macaddr,
+            mac_key,
+            common_fields,
+            **kwargs
+    ):
         options = DHCPOptions(packet[DHCP].options)
         typename = options.message_type_name
         recv_time = packet.time
 
-        mac_key = f"mac_{macaddr}"
-        common_fields = {
-            "last_seen": recv_time,
-            "seen_by": "daniel",
-        }
-
-        mac_fields = common_fields.copy()
-        mac_fields.update({
+        mac_fields = {
             f"last_{typename}_seen": recv_time,
             f"last_{typename}": packet.show(
                 indent=0,
                 dump=True
             ).rstrip(),
             f"last_{typename}_options": options.as_json(),
-        })
-
-        pipeline = self.db.pipeline()
+        }
 
         if options.message_type in (1, 3):  # DISCOVER, REQUEST
             if options.hostname is not None:
@@ -149,7 +146,6 @@ class DHCPMonitorWorker(PacketSnifferWorker):
                 mac_fields["requested_ipv4_at"] = recv_time
 
             pipeline.hset(mac_key, mapping=mac_fields)
-            pipeline.hsetnx(mac_key, "first_seen", recv_time)
 
         elif options.message_type == 5:  # ACK (server->client)
             ipv4addr = options.server_id
@@ -157,12 +153,10 @@ class DHCPMonitorWorker(PacketSnifferWorker):
 
             # server
             pipeline.hset(mac_key, "ipv4", ipv4addr, mapping=mac_fields)
-            pipeline.hsetnx(mac_key, "first_seen", recv_time)
-
             pipeline.hset(ipv4_key, "mac", macaddr, mapping=common_fields)
 
             # client -- need to look up the ipv4 it just requested!
-            client_macaddr = ether_packet.dst
+            client_macaddr = packet[Ether].dst
             client_mac_key = f"mac_{client_macaddr}"
             client_request = self.db.hmget(
                 client_mac_key,
@@ -196,29 +190,16 @@ class DHCPMonitorWorker(PacketSnifferWorker):
         elif options.message_type == 6:  # NAK (server->client)
             # nothing to see here (other than, macXXX is online)
             pipeline.hset(mac_key, mapping=mac_fields)
-            pipeline.hsetnx(mac_key, "first_seen", recv_time)
 
         else:
-            # Pull the last_DHCP* stuff out of mac_fields.
-            _decoded = mac_fields.pop(f"last_{typename}")
-            _options = mac_fields.pop(f"last_{typename}_options")
-            mac_fields.pop(f"last_{typename}_seen")
-
-            # Log the sighting.
-            pipeline.hset(mac_key, mapping=mac_fields)
-            pipeline.hsetnx(mac_key, "first_seen", recv_time)
-
             # Retain this unhandled packet for future analysis.
             next_raw_dhcp_id = self.db.incr("next_raw_dhcp_id")
             pipeline.hset(f"raw_dhcp:{next_raw_dhcp_id}", mapping={
                 "mac": macaddr,
                 "time": recv_time,
-                "decoded": _decoded,
-                "options": _options,
+                "decoded": mac_fields[f"last_{typename}"],
+                "options": mac_fields[f"last_{typename}_options"],
             })
-
-        pipeline.hset("heartbeats", "daniel", recv_time)
-        pipeline.execute()
 
 
 main = DHCPMonitorWorker.main
