@@ -119,7 +119,8 @@ class DHCPMonitorWorker(PacketSnifferWorker):
                 mac_fields["requested_ipv4"] = options.requested_addr
                 mac_fields["requested_ipv4_at"] = packet.time
 
-            pipeline.hset(mac_key, mapping=mac_fields)
+            if mac_fields:
+                pipeline.hset(mac_key, mapping=mac_fields)
 
         elif options.message_type == 5:  # ACK (server->client)
             ipv4addr = options.server_id
