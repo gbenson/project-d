@@ -3,7 +3,7 @@ import logging
 
 from abc import ABC, abstractmethod
 
-from scapy.all import Ether, IFACES, sniff
+from scapy.all import ARP, Ether, IFACES, IP, sniff
 from scapy.arch.linux import IFF_LOOPBACK
 
 from .logging import init_logging
@@ -34,7 +34,7 @@ class PacketSnifferWorker(Worker):
             db = Redis()
         self.db = db
 
-        self._worker_name = self.WORKER_NAME.lower()
+        self.name = self.WORKER_NAME.lower()
 
     @property
     def interfaces(self):
@@ -77,58 +77,117 @@ class PacketSnifferWorker(Worker):
         except:  # noqa: E722
             log.error("packet processing failed:", exc_info=True)
 
+    # XXX refactor tests, then remove this method
     def _process_packet(self, packet):
-        macaddr = packet[Ether].src.lower()
+        return PacketProcessor(self, packet).run()
 
-        common_fields = {
-            "last_seen": packet.time,
-            "last_seen_by": self._worker_name,
-            f"last_seen_by_{self._worker_name}": packet.time,
+
+class PacketProcessor:
+    def __init__(self, worker, packet):
+        self.worker = worker
+        self.packet = packet
+
+        self._issue_categories = []
+
+        self.packet_hash = None
+        self.src_mac = None
+
+    def run(self):
+        self.pipeline = self.worker.db.pipeline()
+        try:
+            self._run()
+        finally:
+            for set in self._issue_categories:
+                self.pipeline.sadd(set, self.packet_hash)
+            self.pipeline.hset(
+                "heartbeats",
+                self.worker.name,
+                self.packet.time,
+            )
+            self.pipeline.execute()
+
+    def _run(self):
+        self.common_fields = {
+            "last_seen": self.packet.time,
+            "last_seen_by": self.worker.name,
+            f"last_seen_by_{self.worker.name}": self.packet.time,
         }
 
         # Log the raw packet.
-        packet_bytes = bytearray(packet.original)
-        for index in (0x12, 0x13, 0x18, 0x19):
-            packet_bytes[18:20] = b"\xde\xad"  # id
-            packet_bytes[24:26] = b"\xbe\xef"  # chksum
-        packet_hash = hashlib.blake2s(packet_bytes).hexdigest()
+        self.ether_layer = self.packet.getlayer(Ether)
+        if self.ether_layer is None:
+            self.record_issue("first_layer")
 
-        packet_key = f"pkt_{packet_hash}"
+        self.packet_hash = self._packet_hash()
+        self.packet_key = f"pkt_{self.packet_hash}"
 
-        packet_fields = common_fields.copy()
-        packet_fields.update({
-            "raw_bytes": packet.original,
-            "last_seen_from": macaddr,
-        })
+        if self.ether_layer is not None:
+            self.src_mac = self.ether_layer.src.lower()
+            self.mac_key = f"mac_{self.src_mac}"
 
-        pipeline = self.db.pipeline()
+        self._record_raw_packet()
 
-        pipeline.hset(packet_key, mapping=packet_fields)
-        pipeline.hdel(packet_key, "seen_by")  # XXX temp cleanup code
-        pipeline.hsetnx(packet_key, "first_seen", packet.time)
-        pipeline.hincrby(packet_key, "num_sightings", 1)
+        if self.ether_layer is None:
+            return
 
-        # Log the sighting.
-        mac_key = f"mac_{macaddr}"
-
-        pipeline.hset(mac_key, mapping=common_fields)
-        pipeline.hdel(mac_key, "seen_by")  # XXX temp cleanup code
-        pipeline.hsetnx(mac_key, "first_seen", packet.time)
-
-        pipeline.hset(f"macpkts_{macaddr}", packet_hash, packet.time)
+        # Log the device sighting.
+        self._record_device_sighting()
 
         # Hand over to worker-specific code.
-        try:
-            return self.process_packet(
-                packet=packet,
-                pipeline=pipeline,
-                common_fields=common_fields,
-                macaddr=macaddr,
-                mac_key=mac_key,
-                packet_hash=packet_hash,
-                packet_key=packet_key,
-            )
+        return self.worker.process_packet(
+            packet=self.packet,
+            pipeline=self.pipeline,
+            common_fields=self.common_fields,
+            macaddr=self.src_mac,
+            mac_key=self.mac_key,
+            packet_hash=self.packet_hash,
+            packet_key=self.packet_key,
+        )
 
-        finally:
-            pipeline.hset("heartbeats", self._worker_name, packet.time)
-            pipeline.execute()
+    def _packet_hash(self):
+        return hashlib.blake2s(self._packet_hash_bytes()).hexdigest()
+
+    def _packet_hash_bytes(self):
+        packet_bytes = self.packet.original
+        if self.ether_layer is None:
+            return packet_bytes
+
+        copy_packet = self.ether_layer.__class__(packet_bytes)
+        ipv4_layer = copy_packet.getlayer(IP)
+        if ipv4_layer is None:
+            if ARP not in copy_packet:
+                self.record_issue("ether_payload")
+            return packet_bytes
+
+        ipv4_layer.id = 0xdead
+        ipv4_layer.chksum = 0xbeef
+
+        return bytes(copy_packet)
+
+    def _record_raw_packet(self):
+        fields = self.common_fields.copy()
+        fields["raw_bytes"] = self.packet.original
+        if self.src_mac is not None:
+            fields["last_seen_from"] = self.src_mac
+
+        key, pipeline = self.packet_key, self.pipeline
+
+        pipeline.hset(key, mapping=fields)
+        pipeline.hdel(key, "seen_by")  # XXX temp cleanup
+        pipeline.hsetnx(key, "first_seen", self.packet.time)
+        pipeline.hincrby(key, "num_sightings", 1)
+
+    def _record_device_sighting(self):
+        key, pipeline = self.mac_key, self.pipeline
+
+        pipeline.hset(key, mapping=self.common_fields)
+        pipeline.hdel(key, "seen_by")  # XXX temp cleanup code
+        pipeline.hsetnx(key, "first_seen", self.packet.time)
+
+        key = f"macpkts_{self.src_mac}"
+
+        pipeline.hset(key, self.packet_hash, self.packet.time)
+
+    def record_issue(self, category):
+        """Note that there was an issue processing this packet."""
+        self._issue_categories.append(f"unhandled:pkts:{category}")
