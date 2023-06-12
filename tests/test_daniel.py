@@ -79,7 +79,7 @@ class MockPacket(dict):
         self.original = b">>raw bytes<<"
 
 
-PKTHASH = "a94633760744dc5894cf1d00e74ec2353be937698580bb2141efda3131915ee5"
+PKTHASH = "78dc21dd7b0fcb8271678aac91d7326674daf7aa2f132acf8bfb69979f56178f"
 PKTKEY = f"pkt_{PKTHASH}"
 
 

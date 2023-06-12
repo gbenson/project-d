@@ -87,7 +87,12 @@ class PacketSnifferWorker(Worker):
         }
 
         # Log the raw packet.
-        packet_hash = hashlib.blake2s(packet.original).hexdigest()
+        packet_bytes = bytearray(packet.original)
+        for index in (0x12, 0x13, 0x18, 0x19):
+            packet_bytes[18:20] = b"\xde\xad"  # id
+            packet_bytes[24:26] = b"\xbe\xef"  # chksum
+        packet_hash = hashlib.blake2s(packet_bytes).hexdigest()
+
         packet_key = f"pkt_{packet_hash}"
 
         packet_fields = common_fields.copy()
