@@ -4,6 +4,8 @@ import sys
 from datetime import datetime
 from numbers import Real
 
+from manuf import MacParser
+
 from .redis import Redis
 
 
@@ -26,6 +28,7 @@ class Reporter(Redis):
         keys = list(self.scan_iter("mac_*"))
         if not keys:
             return
+        mac_vendor_lookup = MacParser("/usr/share/wireshark/manuf")
         pipeline = self.pipeline()
         for key in keys:
             pipeline.hgetall(key)
@@ -36,6 +39,13 @@ class Reporter(Redis):
                 for key, machine in machines
         ):
             print(f"{key}:")
+            vendor = mac_vendor_lookup.get_all(key.split("_", 1)[-1])
+            vendor = vendor.manuf_long or vendor.manuf
+            if vendor is not None:
+                vendor = {
+                    "Ce Link Limited": "Amazon Technologies Inc",
+                }.get(vendor, vendor)
+                print(f"  {'mac_hardware_vendor':26}: {vendor}")
             for field, value in sorted(machine.items()):
                 if (field.endswith("_seen")
                         or field.startswith("last_seen_by_")):
