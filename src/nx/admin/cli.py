@@ -37,6 +37,11 @@ class Reporter(Redis):
         ):
             print(f"{key}:")
             for field, value in sorted(machine.items()):
+                if (field.endswith("_seen")
+                        or field.startswith("last_seen_by_")):
+                    value = self.format_timestamp(value)
+                if field == "first_seen":
+                    value = value.rsplit(":", 1)[0].rstrip()
                 if "\n" in value:
                     value = f"repr: {value!r}"
                 line = f"  {field:26}: {value}"
