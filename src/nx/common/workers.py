@@ -11,6 +11,8 @@ from ..services import Redis
 
 log = logging.getLogger(__name__)
 
+Unset = object()
+
 
 class Worker(ABC):
     @property
@@ -89,6 +91,7 @@ class PacketProcessor:
 
         self._issue_categories = []
 
+        self._ether_layer = Unset
         self.packet_hash = None
         self.src_mac = None
 
@@ -114,7 +117,6 @@ class PacketProcessor:
         }
 
         # Log the raw packet.
-        self.ether_layer = self.packet.getlayer(Ether)
         if self.ether_layer is None:
             self.record_issue("first_layer")
 
@@ -143,6 +145,12 @@ class PacketProcessor:
             packet_hash=self.packet_hash,
             packet_key=self.packet_key,
         )
+
+    @property
+    def ether_layer(self):
+        if self._ether_layer is Unset:
+            self._ether_layer = self.packet.getlayer(Ether)
+        return self._ether_layer
 
     def _packet_hash(self):
         return hashlib.blake2s(self._packet_hash_bytes()).hexdigest()
