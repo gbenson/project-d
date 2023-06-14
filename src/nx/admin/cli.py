@@ -37,12 +37,8 @@ class Reporter(Redis):
         ):
             print(f"{key}:")
             for field, value in sorted(machine.items()):
-                # Clean up old-style last_DHCP* logs
-                # XXX remove once DB clears of them
-                if (field.startswith("last_DHCP")
-                        and not field.endswith("_seen")):
-                    if "\n" in value:
-                        value = repr(value)
+                if "\n" in value:
+                    value = f"repr: {value!r}"
                 line = f"  {field:26}: {value}"
                 if len(line) > max_linelen:
                     line = line[:max_linelen - 3] + "..."
