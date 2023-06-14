@@ -1,3 +1,4 @@
+import os
 import time
 
 from .redis import Redis
@@ -28,6 +29,7 @@ class Reporter(Redis):
         for key in keys:
             pipeline.hgetall(key)
         machines = zip(keys, pipeline.execute())
+        max_linelen = os.get_terminal_size().columns
         for _, key, machine in sorted(
                 (float(machine["last_seen"]), key, machine)
                 for key, machine in machines
@@ -40,9 +42,10 @@ class Reporter(Redis):
                         and not field.endswith("_seen")):
                     if "\n" in value:
                         value = repr(value)
-                    if len(value) > 80:
-                        value = value[:77] + "..."
-                print(f"  {field:26}: {value}")
+                line = f"  {field:26}: {value}"
+                if len(line) > max_linelen:
+                    line = line[:max_linelen - 3] + "..."
+                print(line)
             print()
 
     @classmethod
