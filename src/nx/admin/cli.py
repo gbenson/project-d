@@ -1,5 +1,8 @@
 import os
-import time
+import sys
+
+from datetime import datetime
+from numbers import Real
 
 from .redis import Redis
 
@@ -14,11 +17,9 @@ class Reporter(Redis):
         if not heartbeats:
             return
         print("Heartbeats:")
-        now = time.mktime(time.localtime())
         for worker, seen in sorted(heartbeats.items()):
-            delta = int(now - float(seen))
-            seen = self._strftime(seen)
-            print(f"  {worker:7}: {delta:2} seconds ago : {seen}")
+            ts = self.format_timestamp(seen, justify=True)
+            print(f"  {worker:7}: {ts}")
         print()
 
     def _report_machines(self):
@@ -49,15 +50,37 @@ class Reporter(Redis):
             print()
 
     @classmethod
-    def _strftime(cls, timestamp, fmt="%Y-%m-%d %H:%M:%S"):
-        secs, frac = timestamp, None
-        if isinstance(secs, str):
-            secs, frac = timestamp.split(".", 1)
-        secs = float(secs)
-        result = time.strftime(fmt, time.localtime(secs))
-        if frac is not None:
-            result = f"{result}.{frac:7}"
-        return result
+    def format_timestamp(cls, ts, justify=False):
+        if isinstance(ts, bytes):
+            ts = ts.decode()
+        if isinstance(ts, str):
+            ts = float(ts)
+        if isinstance(ts, Real):
+            ts = datetime.fromtimestamp(ts)
+        delta = cls.format_timedelta(datetime.now() - ts)
+        if justify:
+            delta = f"{delta:>10}"
+        return f"{ts:%Y-%m-%d %H:%M:%S} : {delta} ago"
+
+    TIMEDELTA_UNITS = (
+        ("seconds", 60),
+        ("minutes", 60),
+        ("hours", 24),
+        ("days", 7),
+        ("weeks", 52),  # ish ;)
+        ("years", sys.maxsize),
+    )
+
+    @classmethod
+    def format_timedelta(cls, delta):
+        q = int(delta.total_seconds())
+        for unit, r in cls.TIMEDELTA_UNITS:
+            q, result = divmod(q, r)
+            if q:
+                continue
+            if result == 1:
+                unit = unit.rstrip("s")
+            return f"{result} {unit}"
 
     @classmethod
     def main(cls):
