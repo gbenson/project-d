@@ -96,17 +96,18 @@ class PacketProcessor:
         self.src_mac = None
 
     def run(self):
-        self.pipeline = self.worker.db.pipeline()
+        heartbeat = self.worker.name, self.packet.time
+        self.pipeline = self.worker.db.pipeline(transaction=False)
         try:
-            self._run()
+            try:
+                try:
+                    self._run()
+                finally:
+                    for set in self._issue_categories:
+                        self.pipeline.sadd(set, self.packet_hash)
+            finally:
+                self.pipeline.hset("heartbeats", *heartbeat)
         finally:
-            for set in self._issue_categories:
-                self.pipeline.sadd(set, self.packet_hash)
-            self.pipeline.hset(
-                "heartbeats",
-                self.worker.name,
-                self.packet.time,
-            )
             self.pipeline.execute()
 
     def _run(self):

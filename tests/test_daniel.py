@@ -9,7 +9,7 @@ class MockDatabase:
     def __init__(self):
         self.log = []
 
-    def pipeline(self):
+    def pipeline(self, transaction=None):
         return MockPipeline(self.log)
 
     def hmget(self, *args):
