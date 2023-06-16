@@ -25,7 +25,7 @@ class Reporter(Redis):
         print()
 
     def _report_machines(self):
-        keys = list(self.scan_iter("mac_*"))
+        keys = [f"mac_{mac}" for mac in self.smembers("macs")]
         if not keys:
             return
         mac_vendor_lookup = MacParser("/usr/share/wireshark/manuf")
