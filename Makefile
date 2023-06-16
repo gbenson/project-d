@@ -9,4 +9,7 @@ wheel: test
 install:
 	pip install -e .[dev]
 
-.PHONY: test check wheel
+deploy: wheel
+	bash deploy.sh
+
+.PHONY: test check wheel install deploy
