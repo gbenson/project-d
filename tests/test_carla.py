@@ -90,6 +90,7 @@ def test_unhandled_arp_packet():
             ("first_seen", 1686086875.268219),
         ]],
         ["hincrby", (expect_packet_key, "num_sightings", 1)],
+        ["sadd", "macs", ("00:0d:f7:12:ca:fe",)],
         ["hset", "mac_00:0d:f7:12:ca:fe", [
             ("last_seen", 1686086875.268219),
             ("last_seen_by_carla", 1686086875.268219),
@@ -137,6 +138,7 @@ def test_regular_packets(op, expect_packet_hash):
             ("first_seen", 1686086875.268219),
         ]],
         ["hincrby", (expect_packet_key, "num_sightings", 1)],
+        ["sadd", "macs", ("00:0d:f7:12:ca:fe",)],
         ["hset", "mac_00:0d:f7:12:ca:fe", [
             ("last_seen", 1686086875.268219),
             ("last_seen_by_carla", 1686086875.268219),
@@ -187,6 +189,7 @@ def test_unspecified_ipv4_not_stored():
             ("first_seen", 1686086875.268219),
         ]],
         ["hincrby", (expect_packet_key, "num_sightings", 1)],
+        ["sadd", "macs", ("00:0d:f7:12:ca:fe",)],
         ["hset", "mac_00:0d:f7:12:ca:fe", [
             ("last_seen", 1686086875.268219),
             ("last_seen_by_carla", 1686086875.268219),

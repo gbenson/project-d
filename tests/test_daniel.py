@@ -49,6 +49,9 @@ class MockPipeline:
             args["seen_by"] = last_seen_by
         self.log.append([cmd, name, list(sorted(args.items()))])
 
+    def sadd(self, key, *args):
+        self.log.append(["sadd", key, args])
+
     def execute(self):
         self.log.append("execute")
         print(self.log)
@@ -103,6 +106,7 @@ def test_unhandled_message_handling(extras):
             ("first_seen", 1686086875.268219),
         ]],
         ["hincrby", (expect_packet_key, "num_sightings", 1)],
+        ["sadd", "macs", ("00:0d:f7:12:ca:fe",)],
         ["hset", "mac_00:0d:f7:12:ca:fe", [
             ("last_seen", 1686086875.268219),
             ("last_seen_by_daniel", 1686086875.268219),
@@ -155,6 +159,7 @@ def test_request_stores_requested_ipv4():
             ("first_seen", 1686086875.268219),
         ]],
         ["hincrby", (expect_packet_key, "num_sightings", 1)],
+        ["sadd", "macs", ("00:0d:f7:12:ca:fe",)],
         ["hset", "mac_00:0d:f7:12:ca:fe", [
             ("last_seen", 1686086875.268219),
             ("last_seen_by_daniel", 1686086875.268219),
@@ -207,6 +212,7 @@ def test_ack_retrieves_requested_ipv4():
             ("first_seen", 1686086875.268219),
         ]],
         ["hincrby", (expect_packet_key, "num_sightings", 1)],
+        ["sadd", "macs", ("00:0d:f7:12:ca:fe",)],
         ["hset", "mac_00:0d:f7:12:ca:fe", [
             ("last_seen", 1686086875.268219),
             ("last_seen_by_daniel", 1686086875.268219),
@@ -283,6 +289,7 @@ def test_nak():
             ("first_seen", 1686086875.268219),
         ]],
         ["hincrby", (expect_packet_key, "num_sightings", 1)],
+        ["sadd", "macs", ("00:0d:f7:12:ca:fe",)],
         ["hset", "mac_00:0d:f7:12:ca:fe", [
             ("last_seen", 1686086875.268219),
             ("last_seen_by_daniel", 1686086875.268219),
