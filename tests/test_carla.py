@@ -161,6 +161,7 @@ def test_regular_packets(op, expect_packet_hash):
             ("seen_by", "carla"),
         ]],
         ["hdel", "ipv4_1.2.3.4", "seen_by"],
+        ["sadd", "ipv4s", ("1.2.3.4",)],
         ["hset", "heartbeats", [
             ("carla", 1686086875.268219),
         ]],

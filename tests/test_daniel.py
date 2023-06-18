@@ -240,6 +240,7 @@ def test_ack_retrieves_requested_ipv4():
             ("seen_by", "daniel"),
         ]],
         ["hdel", "ipv4_4.3.2.1", "seen_by"],
+        ["sadd", "ipv4s", ("4.3.2.1",)],
         ["hmget", (
             "mac_c8:e1:30:ba:be:23",
             "requested_ipv4",
@@ -258,6 +259,7 @@ def test_ack_retrieves_requested_ipv4():
             ("seen_by", "daniel"),
         ]],
         ["hdel", "ipv4_5.6.7.8", "seen_by"],
+        ["sadd", "ipv4s", ("5.6.7.8",)],
         ["hset", "heartbeats", [
             ("daniel", 1686086875.268219),
         ]],

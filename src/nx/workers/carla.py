@@ -29,6 +29,7 @@ class ARPMonitorWorker(PacketSnifferWorker):
         ipv4_key = f"ipv4_{ipv4addr}"
         pipeline.hset(ipv4_key, "mac", macaddr, mapping=common_fields)
         pipeline.hdel(ipv4_key, "seen_by")  # XXX temp cleanup code
+        pipeline.sadd("ipv4s", ipv4addr)
 
     # Trying this on something with IFF_NOARP gets you the following:
     # ERROR: Cannot set filter: Failed to compile filter expression arp (-1)
