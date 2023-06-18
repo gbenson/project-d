@@ -182,7 +182,6 @@ class PacketProcessor:
         key, pipeline = self.packet_key, self.pipeline
 
         pipeline.hset(key, mapping=fields)
-        pipeline.hdel(key, "seen_by")  # XXX temp cleanup
         pipeline.hsetnx(key, "first_seen", self.packet.time)
         pipeline.hincrby(key, "num_sightings", 1)
 
@@ -193,7 +192,6 @@ class PacketProcessor:
 
         key = self.mac_key
         pipeline.hset(key, mapping=self.common_fields)
-        pipeline.hdel(key, "seen_by")  # XXX temp cleanup code
         pipeline.hsetnx(key, "first_seen", self.packet.time)
 
         key = f"macpkts_{self.src_mac}"

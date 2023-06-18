@@ -85,7 +85,6 @@ def test_unhandled_arp_packet():
             ("raw_bytes", b">>raw bytes<<"),
             ("seen_by", "carla"),
         ]],
-        ["hdel", expect_packet_key, "seen_by"],
         ["hsetnx", expect_packet_key, [
             ("first_seen", 1686086875.268219),
         ]],
@@ -96,7 +95,6 @@ def test_unhandled_arp_packet():
             ("last_seen_by_carla", 1686086875.268219),
             ("seen_by", "carla"),
         ]],
-        ["hdel", "mac_00:0d:f7:12:ca:fe", "seen_by"],
         ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
             ("first_seen", 1686086875.268219),
         ]],
@@ -133,7 +131,6 @@ def test_regular_packets(op, expect_packet_hash):
             ("raw_bytes", b">>raw bytes<<"),
             ("seen_by", "carla"),
         ]],
-        ["hdel", expect_packet_key, "seen_by"],
         ["hsetnx", expect_packet_key, [
             ("first_seen", 1686086875.268219),
         ]],
@@ -144,7 +141,6 @@ def test_regular_packets(op, expect_packet_hash):
             ("last_seen_by_carla", 1686086875.268219),
             ("seen_by", "carla"),
         ]],
-        ["hdel", "mac_00:0d:f7:12:ca:fe", "seen_by"],
         ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
             ("first_seen", 1686086875.268219),
         ]],
@@ -160,7 +156,6 @@ def test_regular_packets(op, expect_packet_hash):
             ("mac", "00:0d:f7:12:ca:fe"),
             ("seen_by", "carla"),
         ]],
-        ["hdel", "ipv4_1.2.3.4", "seen_by"],
         ["sadd", "ipv4s", ("1.2.3.4",)],
         ["hset", "heartbeats", [
             ("carla", 1686086875.268219),
@@ -185,7 +180,6 @@ def test_unspecified_ipv4_not_stored():
             ("raw_bytes", b">>raw bytes<<"),
             ("seen_by", "carla"),
         ]],
-        ["hdel", expect_packet_key, "seen_by"],
         ["hsetnx", expect_packet_key, [
             ("first_seen", 1686086875.268219),
         ]],
@@ -196,7 +190,6 @@ def test_unspecified_ipv4_not_stored():
             ("last_seen_by_carla", 1686086875.268219),
             ("seen_by", "carla"),
         ]],
-        ["hdel", "mac_00:0d:f7:12:ca:fe", "seen_by"],
         ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
             ("first_seen", 1686086875.268219),
         ]],

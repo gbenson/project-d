@@ -101,7 +101,6 @@ def test_unhandled_message_handling(extras):
             ("raw_bytes", b">>raw bytes<<"),
             ("seen_by", "daniel"),
         ]],
-        ["hdel", expect_packet_key, "seen_by"],
         ["hsetnx", expect_packet_key, [
             ("first_seen", 1686086875.268219),
         ]],
@@ -112,7 +111,6 @@ def test_unhandled_message_handling(extras):
             ("last_seen_by_daniel", 1686086875.268219),
             ("seen_by", "daniel"),
         ]],
-        ["hdel", "mac_00:0d:f7:12:ca:fe", "seen_by"],
         ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
             ("first_seen", 1686086875.268219),
         ]],
@@ -123,7 +121,6 @@ def test_unhandled_message_handling(extras):
             ("last_DHCP_op42", expect_packet_hash),
             ("last_DHCP_op42_seen", 1686086875.268219),
         ]],
-        ["hdel", "mac_00:0d:f7:12:ca:fe", "last_DHCP_op42_options"],
         ["hset", "heartbeats", [
             ("daniel", 1686086875.268219),
         ]],
@@ -154,7 +151,6 @@ def test_request_stores_requested_ipv4():
             ("raw_bytes", b">>raw bytes<<"),
             ("seen_by", "daniel"),
         ]],
-        ["hdel", expect_packet_key, "seen_by"],
         ["hsetnx", expect_packet_key, [
             ("first_seen", 1686086875.268219),
         ]],
@@ -165,7 +161,6 @@ def test_request_stores_requested_ipv4():
             ("last_seen_by_daniel", 1686086875.268219),
             ("seen_by", "daniel"),
         ]],
-        ["hdel", "mac_00:0d:f7:12:ca:fe", "seen_by"],
         ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
             ("first_seen", 1686086875.268219),
         ]],
@@ -176,7 +171,6 @@ def test_request_stores_requested_ipv4():
             ("last_DHCPREQUEST", expect_packet_hash),
             ("last_DHCPREQUEST_seen", 1686086875.268219),
         ]],
-        ["hdel", "mac_00:0d:f7:12:ca:fe", "last_DHCPREQUEST_options"],
         ["hset", "mac_00:0d:f7:12:ca:fe", [
             ("device_name", "Daniel's phone"),
             ("requested_ipv4", "1.2.3.4"),
@@ -207,7 +201,6 @@ def test_ack_retrieves_requested_ipv4():
             ("raw_bytes", b">>raw bytes<<"),
             ("seen_by", "daniel"),
         ]],
-        ["hdel", expect_packet_key, "seen_by"],
         ["hsetnx", expect_packet_key, [
             ("first_seen", 1686086875.268219),
         ]],
@@ -218,7 +211,6 @@ def test_ack_retrieves_requested_ipv4():
             ("last_seen_by_daniel", 1686086875.268219),
             ("seen_by", "daniel"),
         ]],
-        ["hdel", "mac_00:0d:f7:12:ca:fe", "seen_by"],
         ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
             ("first_seen", 1686086875.268219),
         ]],
@@ -229,7 +221,6 @@ def test_ack_retrieves_requested_ipv4():
             ("last_DHCPACK", expect_packet_hash),
             ("last_DHCPACK_seen", 1686086875.268219),
         ]],
-        ["hdel", "mac_00:0d:f7:12:ca:fe", "last_DHCPACK_options"],
         ["hset", "mac_00:0d:f7:12:ca:fe", [
             ("ipv4", "4.3.2.1"),
         ]],
@@ -239,7 +230,6 @@ def test_ack_retrieves_requested_ipv4():
             ("mac", "00:0d:f7:12:ca:fe"),
             ("seen_by", "daniel"),
         ]],
-        ["hdel", "ipv4_4.3.2.1", "seen_by"],
         ["sadd", "ipv4s", ("4.3.2.1",)],
         ["hmget", (
             "mac_c8:e1:30:ba:be:23",
@@ -251,14 +241,12 @@ def test_ack_retrieves_requested_ipv4():
             ("last_seen_by_daniel", 1686086875.268219),
             ("seen_by", "daniel"),
         ]],
-        ["hdel", "mac_c8:e1:30:ba:be:23", "seen_by"],
         ["hset", "ipv4_5.6.7.8", [
             ("last_seen", 1686086875.268219),
             ("last_seen_by_daniel", 1686086875.268219),
             ("mac", "c8:e1:30:ba:be:23"),
             ("seen_by", "daniel"),
         ]],
-        ["hdel", "ipv4_5.6.7.8", "seen_by"],
         ["sadd", "ipv4s", ("5.6.7.8",)],
         ["hset", "heartbeats", [
             ("daniel", 1686086875.268219),
@@ -286,7 +274,6 @@ def test_nak():
             ("raw_bytes", b">>raw bytes<<"),
             ("seen_by", "daniel"),
         ]],
-        ["hdel", expect_packet_key, "seen_by"],
         ["hsetnx", expect_packet_key, [
             ("first_seen", 1686086875.268219),
         ]],
@@ -297,7 +284,6 @@ def test_nak():
             ("last_seen_by_daniel", 1686086875.268219),
             ("seen_by", "daniel"),
         ]],
-        ["hdel", "mac_00:0d:f7:12:ca:fe", "seen_by"],
         ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
             ("first_seen", 1686086875.268219),
         ]],
@@ -308,7 +294,6 @@ def test_nak():
             ("last_DHCPNAK", expect_packet_hash),
             ("last_DHCPNAK_seen", 1686086875.268219),
         ]],
-        ["hdel", "mac_00:0d:f7:12:ca:fe", "last_DHCPNAK_options"],
         ["hset", "heartbeats", [
             ("daniel", 1686086875.268219),
         ]],

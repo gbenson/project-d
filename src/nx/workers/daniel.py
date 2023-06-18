@@ -105,9 +105,6 @@ class DHCPMonitorWorker(PacketSnifferWorker):
             f"last_{typename}_seen": packet.time,
         })
 
-        # XXX Temporary database cleanup code XXX
-        pipeline.hdel(mac_key, f"last_{typename}_options")
-
         if options.message_type in (1, 3):  # DISCOVER, REQUEST
             mac_fields = {}
 
@@ -129,7 +126,6 @@ class DHCPMonitorWorker(PacketSnifferWorker):
             # server
             pipeline.hset(mac_key, "ipv4", ipv4addr)
             pipeline.hset(ipv4_key, "mac", macaddr, mapping=common_fields)
-            pipeline.hdel(ipv4_key, "seen_by")  # XXX temp cleanup code
             pipeline.sadd("ipv4s", ipv4addr)
 
             # client -- need to look up the ipv4 it just requested!
@@ -154,7 +150,6 @@ class DHCPMonitorWorker(PacketSnifferWorker):
                         client_ipv4addr,
                         mapping=common_fields,
                     )
-                    pipeline.hdel(client_mac_key, "seen_by")  # XXX temp
                     # don't need first seen, we seen it for request
 
                     client_ipv4_key = f"ipv4_{client_ipv4addr}"
@@ -164,7 +159,6 @@ class DHCPMonitorWorker(PacketSnifferWorker):
                         client_macaddr,
                         mapping=common_fields,
                     )
-                    pipeline.hdel(client_ipv4_key, "seen_by")  # XXX temp
                     pipeline.sadd("ipv4s", client_ipv4addr)
 
 
