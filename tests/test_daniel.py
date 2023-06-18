@@ -44,9 +44,6 @@ class MockPipeline:
             args.update({key: value})
         if "raw_bytes" in args:
             args["raw_bytes"] = b">>raw bytes<<"
-        last_seen_by = args.pop("last_seen_by", None)  # XXX
-        if last_seen_by is not None:
-            args["seen_by"] = last_seen_by
         self.log.append([cmd, name, list(sorted(args.items()))])
 
     def sadd(self, key, *args):
@@ -96,10 +93,10 @@ def test_unhandled_message_handling(extras):
     assert worker.db.log == [
         ["hset", expect_packet_key, [
             ("last_seen", 1686086875.268219),
+            ("last_seen_by", "daniel"),
             ("last_seen_by_daniel", 1686086875.268219),
             ("last_seen_from", "00:0d:f7:12:ca:fe"),
             ("raw_bytes", b">>raw bytes<<"),
-            ("seen_by", "daniel"),
         ]],
         ["hsetnx", expect_packet_key, [
             ("first_seen", 1686086875.268219),
@@ -108,8 +105,8 @@ def test_unhandled_message_handling(extras):
         ["sadd", "macs", ("00:0d:f7:12:ca:fe",)],
         ["hset", "mac_00:0d:f7:12:ca:fe", [
             ("last_seen", 1686086875.268219),
+            ("last_seen_by", "daniel"),
             ("last_seen_by_daniel", 1686086875.268219),
-            ("seen_by", "daniel"),
         ]],
         ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
             ("first_seen", 1686086875.268219),
@@ -146,10 +143,10 @@ def test_request_stores_requested_ipv4():
     assert worker.db.log == [
         ["hset", expect_packet_key, [
             ("last_seen", 1686086875.268219),
+            ("last_seen_by", "daniel"),
             ("last_seen_by_daniel", 1686086875.268219),
             ("last_seen_from", "00:0d:f7:12:ca:fe"),
             ("raw_bytes", b">>raw bytes<<"),
-            ("seen_by", "daniel"),
         ]],
         ["hsetnx", expect_packet_key, [
             ("first_seen", 1686086875.268219),
@@ -158,8 +155,8 @@ def test_request_stores_requested_ipv4():
         ["sadd", "macs", ("00:0d:f7:12:ca:fe",)],
         ["hset", "mac_00:0d:f7:12:ca:fe", [
             ("last_seen", 1686086875.268219),
+            ("last_seen_by", "daniel"),
             ("last_seen_by_daniel", 1686086875.268219),
-            ("seen_by", "daniel"),
         ]],
         ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
             ("first_seen", 1686086875.268219),
@@ -196,10 +193,10 @@ def test_ack_retrieves_requested_ipv4():
     assert worker.db.log == [
         ["hset", expect_packet_key, [
             ("last_seen", 1686086875.268219),
+            ("last_seen_by", "daniel"),
             ("last_seen_by_daniel", 1686086875.268219),
             ("last_seen_from", "00:0d:f7:12:ca:fe"),
             ("raw_bytes", b">>raw bytes<<"),
-            ("seen_by", "daniel"),
         ]],
         ["hsetnx", expect_packet_key, [
             ("first_seen", 1686086875.268219),
@@ -208,8 +205,8 @@ def test_ack_retrieves_requested_ipv4():
         ["sadd", "macs", ("00:0d:f7:12:ca:fe",)],
         ["hset", "mac_00:0d:f7:12:ca:fe", [
             ("last_seen", 1686086875.268219),
+            ("last_seen_by", "daniel"),
             ("last_seen_by_daniel", 1686086875.268219),
-            ("seen_by", "daniel"),
         ]],
         ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
             ("first_seen", 1686086875.268219),
@@ -226,9 +223,9 @@ def test_ack_retrieves_requested_ipv4():
         ]],
         ["hset", "ipv4_4.3.2.1", [
             ("last_seen", 1686086875.268219),
+            ("last_seen_by", "daniel"),
             ("last_seen_by_daniel", 1686086875.268219),
             ("mac", "00:0d:f7:12:ca:fe"),
-            ("seen_by", "daniel"),
         ]],
         ["sadd", "ipv4s", ("4.3.2.1",)],
         ["hmget", (
@@ -238,14 +235,14 @@ def test_ack_retrieves_requested_ipv4():
         ["hset", "mac_c8:e1:30:ba:be:23", [
             ("ipv4", "5.6.7.8"),
             ("last_seen", 1686086875.268219),
+            ("last_seen_by", "daniel"),
             ("last_seen_by_daniel", 1686086875.268219),
-            ("seen_by", "daniel"),
         ]],
         ["hset", "ipv4_5.6.7.8", [
             ("last_seen", 1686086875.268219),
+            ("last_seen_by", "daniel"),
             ("last_seen_by_daniel", 1686086875.268219),
             ("mac", "c8:e1:30:ba:be:23"),
-            ("seen_by", "daniel"),
         ]],
         ["sadd", "ipv4s", ("5.6.7.8",)],
         ["hset", "heartbeats", [
@@ -269,10 +266,10 @@ def test_nak():
     assert worker.db.log == [
         ["hset", expect_packet_key, [
             ("last_seen", 1686086875.268219),
+            ("last_seen_by", "daniel"),
             ("last_seen_by_daniel", 1686086875.268219),
             ("last_seen_from", "00:0d:f7:12:ca:fe"),
             ("raw_bytes", b">>raw bytes<<"),
-            ("seen_by", "daniel"),
         ]],
         ["hsetnx", expect_packet_key, [
             ("first_seen", 1686086875.268219),
@@ -281,8 +278,8 @@ def test_nak():
         ["sadd", "macs", ("00:0d:f7:12:ca:fe",)],
         ["hset", "mac_00:0d:f7:12:ca:fe", [
             ("last_seen", 1686086875.268219),
+            ("last_seen_by", "daniel"),
             ("last_seen_by_daniel", 1686086875.268219),
-            ("seen_by", "daniel"),
         ]],
         ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
             ("first_seen", 1686086875.268219),

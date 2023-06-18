@@ -36,9 +36,6 @@ class MockPipeline:
             args.update({key: value})
         if "raw_bytes" in args:
             args["raw_bytes"] = b">>raw bytes<<"
-        last_seen_by = args.pop("last_seen_by", None)  # XXX
-        if last_seen_by is not None:
-            args["seen_by"] = last_seen_by
         self.log.append([cmd, name, list(sorted(args.items()))])
 
     def sadd(self, key, *args):
@@ -80,10 +77,10 @@ def test_unhandled_arp_packet():
     assert worker.db.log == [
         ["hset", expect_packet_key, [
             ("last_seen", 1686086875.268219),
+            ("last_seen_by", "carla"),
             ("last_seen_by_carla", 1686086875.268219),
             ("last_seen_from", "00:0d:f7:12:ca:fe"),
             ("raw_bytes", b">>raw bytes<<"),
-            ("seen_by", "carla"),
         ]],
         ["hsetnx", expect_packet_key, [
             ("first_seen", 1686086875.268219),
@@ -92,8 +89,8 @@ def test_unhandled_arp_packet():
         ["sadd", "macs", ("00:0d:f7:12:ca:fe",)],
         ["hset", "mac_00:0d:f7:12:ca:fe", [
             ("last_seen", 1686086875.268219),
+            ("last_seen_by", "carla"),
             ("last_seen_by_carla", 1686086875.268219),
-            ("seen_by", "carla"),
         ]],
         ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
             ("first_seen", 1686086875.268219),
@@ -126,10 +123,10 @@ def test_regular_packets(op, expect_packet_hash):
     assert worker.db.log == [
         ["hset", expect_packet_key, [
             ("last_seen", 1686086875.268219),
+            ("last_seen_by", "carla"),
             ("last_seen_by_carla", 1686086875.268219),
             ("last_seen_from", "00:0d:f7:12:ca:fe"),
             ("raw_bytes", b">>raw bytes<<"),
-            ("seen_by", "carla"),
         ]],
         ["hsetnx", expect_packet_key, [
             ("first_seen", 1686086875.268219),
@@ -138,8 +135,8 @@ def test_regular_packets(op, expect_packet_hash):
         ["sadd", "macs", ("00:0d:f7:12:ca:fe",)],
         ["hset", "mac_00:0d:f7:12:ca:fe", [
             ("last_seen", 1686086875.268219),
+            ("last_seen_by", "carla"),
             ("last_seen_by_carla", 1686086875.268219),
-            ("seen_by", "carla"),
         ]],
         ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
             ("first_seen", 1686086875.268219),
@@ -152,9 +149,9 @@ def test_regular_packets(op, expect_packet_hash):
         ]],
         ["hset", "ipv4_1.2.3.4", [
             ("last_seen", 1686086875.268219),
+            ("last_seen_by", "carla"),
             ("last_seen_by_carla", 1686086875.268219),
             ("mac", "00:0d:f7:12:ca:fe"),
-            ("seen_by", "carla"),
         ]],
         ["sadd", "ipv4s", ("1.2.3.4",)],
         ["hset", "heartbeats", [
@@ -175,10 +172,10 @@ def test_unspecified_ipv4_not_stored():
     assert worker.db.log == [
         ["hset", expect_packet_key, [
             ("last_seen", 1686086875.268219),
+            ("last_seen_by", "carla"),
             ("last_seen_by_carla", 1686086875.268219),
             ("last_seen_from", "00:0d:f7:12:ca:fe"),
             ("raw_bytes", b">>raw bytes<<"),
-            ("seen_by", "carla"),
         ]],
         ["hsetnx", expect_packet_key, [
             ("first_seen", 1686086875.268219),
@@ -187,8 +184,8 @@ def test_unspecified_ipv4_not_stored():
         ["sadd", "macs", ("00:0d:f7:12:ca:fe",)],
         ["hset", "mac_00:0d:f7:12:ca:fe", [
             ("last_seen", 1686086875.268219),
+            ("last_seen_by", "carla"),
             ("last_seen_by_carla", 1686086875.268219),
-            ("seen_by", "carla"),
         ]],
         ["hsetnx", "mac_00:0d:f7:12:ca:fe", [
             ("first_seen", 1686086875.268219),
