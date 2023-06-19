@@ -62,6 +62,7 @@ def make_test_packet(**kwargs):
 
     packet = packet.__class__(_pkt=bytes(packet))
     packet.time = 1686086875.268219
+    packet.sniffed_on = "wlx0023cafebabe"
     return packet
 
 
@@ -80,6 +81,7 @@ def test_unhandled_arp_packet():
             ("last_seen_by", "carla"),
             ("last_seen_by_carla", 1686086875.268219),
             ("last_seen_from", "00:0d:f7:12:ca:fe"),
+            ("last_sniffed_on", "wlx0023cafebabe"),
             ("raw_bytes", b">>raw bytes<<"),
         ]],
         ["hsetnx", expect_packet_key, [
@@ -126,6 +128,7 @@ def test_regular_packets(op, expect_packet_hash):
             ("last_seen_by", "carla"),
             ("last_seen_by_carla", 1686086875.268219),
             ("last_seen_from", "00:0d:f7:12:ca:fe"),
+            ("last_sniffed_on", "wlx0023cafebabe"),
             ("raw_bytes", b">>raw bytes<<"),
         ]],
         ["hsetnx", expect_packet_key, [
@@ -175,6 +178,7 @@ def test_unspecified_ipv4_not_stored():
             ("last_seen_by", "carla"),
             ("last_seen_by_carla", 1686086875.268219),
             ("last_seen_from", "00:0d:f7:12:ca:fe"),
+            ("last_sniffed_on", "wlx0023cafebabe"),
             ("raw_bytes", b">>raw bytes<<"),
         ]],
         ["hsetnx", expect_packet_key, [

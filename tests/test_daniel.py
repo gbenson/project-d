@@ -67,6 +67,7 @@ def make_test_packet(message_type=None, **kwargs):
 
     packet = packet.__class__(_pkt=bytes(packet))
     packet.time = 1686086875.268219
+    packet.sniffed_on = "wlx0023cafebabe"
     print(f"{packet!r} => {packet.original!r}")
 
     return packet
@@ -96,6 +97,7 @@ def test_unhandled_message_handling(extras):
             ("last_seen_by", "daniel"),
             ("last_seen_by_daniel", 1686086875.268219),
             ("last_seen_from", "00:0d:f7:12:ca:fe"),
+            ("last_sniffed_on", "wlx0023cafebabe"),
             ("raw_bytes", b">>raw bytes<<"),
         ]],
         ["hsetnx", expect_packet_key, [
@@ -146,6 +148,7 @@ def test_request_stores_requested_ipv4():
             ("last_seen_by", "daniel"),
             ("last_seen_by_daniel", 1686086875.268219),
             ("last_seen_from", "00:0d:f7:12:ca:fe"),
+            ("last_sniffed_on", "wlx0023cafebabe"),
             ("raw_bytes", b">>raw bytes<<"),
         ]],
         ["hsetnx", expect_packet_key, [
@@ -196,6 +199,7 @@ def test_ack_retrieves_requested_ipv4():
             ("last_seen_by", "daniel"),
             ("last_seen_by_daniel", 1686086875.268219),
             ("last_seen_from", "00:0d:f7:12:ca:fe"),
+            ("last_sniffed_on", "wlx0023cafebabe"),
             ("raw_bytes", b">>raw bytes<<"),
         ]],
         ["hsetnx", expect_packet_key, [
@@ -269,6 +273,7 @@ def test_nak():
             ("last_seen_by", "daniel"),
             ("last_seen_by_daniel", 1686086875.268219),
             ("last_seen_from", "00:0d:f7:12:ca:fe"),
+            ("last_sniffed_on", "wlx0023cafebabe"),
             ("raw_bytes", b">>raw bytes<<"),
         ]],
         ["hsetnx", expect_packet_key, [

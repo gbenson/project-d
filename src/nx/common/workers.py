@@ -176,6 +176,7 @@ class PacketProcessor:
     def _record_raw_packet(self):
         fields = self.common_fields.copy()
         fields["raw_bytes"] = self.packet.original
+        fields["last_sniffed_on"] = self.packet.sniffed_on
         if self.src_mac is not None:
             fields["last_seen_from"] = self.src_mac
 
