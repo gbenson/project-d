@@ -1,5 +1,10 @@
-test:
-	flake8 && pytest --cov=nx
+default: test
+
+lint:
+	flake8
+
+test: lint
+	pytest --cov=nx
 
 check: test
 
@@ -12,4 +17,4 @@ install:
 deploy: wheel
 	bash deploy.sh
 
-.PHONY: test check wheel install deploy
+.PHONY: lint test check wheel install deploy
