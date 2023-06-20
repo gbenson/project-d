@@ -1,7 +1,10 @@
 import hashlib
 import logging
+import os
+import sys
 
 from abc import ABC, abstractmethod
+from signal import signal, SIGHUP
 
 from scapy.all import ARP, Ether, IFACES, IP, sniff
 from scapy.arch.linux import IFF_LOOPBACK
@@ -14,6 +17,10 @@ log = logging.getLogger(__name__)
 Unset = object()
 
 
+class RestartWorker(Exception):
+    pass
+
+
 class Worker(ABC):
     @property
     @abstractmethod
@@ -23,11 +30,35 @@ class Worker(ABC):
     @abstractmethod
     def run(self):
         log.info(f"Hi, I'm {self.WORKER_NAME}")
+        self._cmd = [sys.executable] + sys.argv
+        self._waiting_to_restart = False
+        signal(SIGHUP, self._handle_SIGHUP)
+
+    def _handle_SIGHUP(self, signum, _):
+        if self._waiting_to_restart:
+            log.info("received second SIGHUP, forcing restart now")
+            self._checkpoint_worker()
+        log.info("received SIGHUP, will restart at next checkpoint")
+        self._waiting_to_restart = True
+
+    def _checkpoint_worker(self):
+        if not self._waiting_to_restart:
+            return
+        log.info("going down for restart")
+        raise RestartWorker
 
     @classmethod
     def main(cls):
         init_logging()
-        cls().run()
+        worker = cls()
+        try:
+            worker.run()
+        except RestartWorker:
+            command = worker._cmd
+            log.info("restarting NOW...")
+            sys.stdout.flush()
+            sys.stderr.flush()
+            os.execv(command[0], command)
 
 
 class PacketSnifferWorker(Worker):
@@ -78,6 +109,8 @@ class PacketSnifferWorker(Worker):
             return self._process_packet(packet)
         except:  # noqa: E722
             log.error("packet processing failed:", exc_info=True)
+        finally:
+            self._checkpoint_worker()
 
     # XXX refactor tests, then remove this method
     def _process_packet(self, packet):
