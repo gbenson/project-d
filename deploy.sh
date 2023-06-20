@@ -16,3 +16,8 @@ source /opt/nx/workers/bin/activate
 pip install --upgrade /var/lib/nx/wheels/$wheel
 EOF
 )
+
+tag=$(echo $wheel | sed 's/-/ /g' | awk '{ print $2 }')
+set -x
+git tag -am $tag $tag
+rm -f $wheel
