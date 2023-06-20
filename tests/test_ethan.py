@@ -126,9 +126,9 @@ def test_regular_packets(kwargs, expect_packet_hash):
         ["sadd", "httpconn:pkts_1.2.3.4:80_8.7.6.5:23456", (
             expect_packet_hash,
         )],
-        ["sadd", "http_connections", (
-            "1.2.3.4:80_8.7.6.5:23456",
-        )],
+        ["hset", "httpconn:last_seen", [
+            ("1.2.3.4:80_8.7.6.5:23456", 1686086875.268219),
+        ]],
         ["hset", "heartbeats", [
             ("ethan", 1686086875.268219),
         ]],

@@ -24,7 +24,7 @@ class HTTPMonitorWorker(PacketSnifferWorker):
         conn_key = f"httpconn:pkts_{conn_id}"
 
         pipeline.sadd(conn_key, packet_hash)
-        pipeline.sadd("http_connections", conn_id)
+        pipeline.hset("httpconn:last_seen", conn_id, packet.time)
 
 
 main = HTTPMonitorWorker.main
