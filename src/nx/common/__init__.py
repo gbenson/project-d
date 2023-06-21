@@ -1,1 +1,1 @@
-from .workers import PacketSnifferWorker
+from .workers import PacketSnifferWorker, RedisClientWorker

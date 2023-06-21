@@ -61,14 +61,15 @@ class Worker(ABC):
             os.execv(command[0], command)
 
 
-class PacketSnifferWorker(Worker):
+class RedisClientWorker(Worker):
     def __init__(self, db=None):
         if db is None:
             db = Redis()
         self.db = db
-
         self.name = self.WORKER_NAME.lower()
 
+
+class PacketSnifferWorker(RedisClientWorker):
     @property
     def interfaces(self):
         """An iterable of network interfaces to operate on."""
