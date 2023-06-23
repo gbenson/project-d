@@ -12,7 +12,7 @@ class RedisC2Client:
         WORKER_NAME = worker_name.upper()
         self.worker_name = worker_name.lower()
 
-        secret = os.environ[f"{WORKER_NAME}_SECRET"]
+        secret = os.environ[f"{WORKER_NAME}_HMAC_SECRET"]
         if not isinstance(secret, bytes):
             secret = secret.encode("utf-8")
         self.hmac = hmac.new(secret, digestmod=hashlib.blake2s)

@@ -36,7 +36,7 @@ class RedisC2Worker(RedisClientWorker):
             return secret
         secvar = kwargs.pop("secret_env", None)
         if secvar is None:
-            secvar = f"{self.name.upper()}_SECRET"
+            secvar = f"{self.name.upper()}_HMAC_SECRET"
         return os.environ[secvar]
 
     def _reset_challenge(self):
@@ -87,6 +87,7 @@ class RedisC2Worker(RedisClientWorker):
         good_sig = base64.urlsafe_b64encode(hash.digest()).rstrip(b"=")
         if not hmac.compare_digest(recv_sig, good_sig):
             raise ValueError("bad signature")
+        del recv_sig, good_sig, hash
         return str(eval(request.decode("utf-8")))
 
 
