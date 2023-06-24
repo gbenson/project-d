@@ -54,12 +54,7 @@ class RedisC2Client:
         while True:
             text = self._read_response()
             if text is not None:
-                kwargs = {}
-                if text.endswith("\n"):
-                    kwargs["end"] = ""
-                if text.startswith("Traceback ("):
-                    kwargs["color"] = YELLOW
-                print(text, **kwargs)
+                print(text)
 
             try:
                 command = input(self.prompt)
@@ -122,7 +117,11 @@ class RedisC2Client:
         result = response[1]
         if result == b"None":
             return None
-        return result.decode("utf-8")
+        result = result.decode("utf-8").rstrip()
+        if result.startswith("Traceback ("):
+            print(result, color=YELLOW)
+            return None
+        return result
 
     def _send(self, data):
         self.db.publish(self.pub_chan, data)
