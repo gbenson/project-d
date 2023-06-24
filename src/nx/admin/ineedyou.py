@@ -111,17 +111,18 @@ class RedisC2Client:
         for msg in self.ps.listen():
             if msg is None:
                 continue
-            if msg["type"] != "message":
-                continue
-            response = msg["data"].split(b":", 1)
-            self._awaiting_response = False
-            self.challenge = response[0]
-            if len(response) != 2:
-                return None
-            result = response[1]
-            if result == b"None":
-                return None
-            return result.decode("utf-8")
+            if msg["type"] == "message":
+                break
+
+        response = msg["data"].split(b":", 1)
+        self._awaiting_response = False
+        self.challenge = response[0]
+        if len(response) != 2:
+            return None
+        result = response[1]
+        if result == b"None":
+            return None
+        return result.decode("utf-8")
 
     def _send(self, data):
         self.db.publish(self.pub_chan, data)
