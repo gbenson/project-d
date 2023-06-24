@@ -17,7 +17,7 @@ dev = [
 
 [project.scripts]
 nxa = "nx.admin.cli:main"
-ineedu = "nx.admin.ineedyou:main"
+inu = "nx.admin.ineedyou:main"
 carla = "nx.workers.carla:main"
 daniel = "nx.workers.daniel:main"
 ethan = "nx.workers.ethan:main"
