@@ -31,6 +31,17 @@ class Worker(ABC):
         key = "_".join([self.WORKER_NAME] + key.split(".")).upper()
         return os.environ[key]
 
+    def load_secret(self, key: str):
+        key_parts = key.split()
+        value = self._getenv_secret(key_parts)
+        if value:
+            return value
+        raise KeyError(key)
+
+    def _getenv_secret(self, key: list[str]):
+        return os.getenv("_".join([self.WORKER_NAME] + key).upper())
+
+
     @abstractmethod
     def run(self):
         log.info(f"Hi, I'm {self.WORKER_NAME}")
