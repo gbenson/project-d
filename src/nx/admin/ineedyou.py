@@ -71,7 +71,7 @@ class RedisC2Client:
             if not command:
                 continue
 
-            self._send(self._sign(command.encode("utf-8")))
+            self._send_signed(command)
 
     def handle_exit(self, args):
         raise SystemExit
@@ -91,6 +91,9 @@ class RedisC2Client:
         if func is not None:
             result = func(args[1:])
         return result
+
+    def _send_signed(self, request):
+        self._send(self._sign(request.encode("utf-8")))
 
     def _sign(self, request):
         hash = self.hmac.copy()
