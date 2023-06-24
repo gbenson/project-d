@@ -5,6 +5,10 @@ import os
 import readline
 
 from .redis import Redis
+from .term import (
+    RED,
+    print,
+)
 
 
 class RedisC2Client:
@@ -46,8 +50,12 @@ class RedisC2Client:
         while True:
             text = self._read_response()
             if text is not None:
-                end = "" if text.endswith("\n") else "\n"
-                print(text, end=end)
+                kwargs = {}
+                if text.endswith("\n"):
+                    kwargs["end"] = ""
+                if text.startswith("Traceback ("):
+                    kwargs["color"] = RED
+                print(text, **kwargs)
 
             try:
                 command = input(self.prompt)
