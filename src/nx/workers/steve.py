@@ -80,8 +80,10 @@ class RedisC2Worker(RedisClientWorker):
     def handle_request(self, request):
         recv_sig, request = request.split(b":", 1)
         hash = self.hmac.copy()
-        hash.update(self.challenge.encode("ascii"))
-        self._reset_challenge()
+        try:
+            hash.update(self.challenge.encode("ascii"))
+        finally:
+            self._reset_challenge()
         hash.update(request)
         # Line below mimics secrets.token_urlsafe()
         good_sig = base64.urlsafe_b64encode(hash.digest()).rstrip(b"=")
