@@ -2,7 +2,6 @@ import base64
 import hashlib
 import hmac
 import logging
-import os
 import secrets
 import traceback
 
@@ -17,7 +16,7 @@ class RedisC2Worker(RedisClientWorker):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        secret = self._load_secret(kwargs)
+        secret = self.load_secret("hmac.key")
         if not isinstance(secret, bytes):
             secret = secret.encode("utf-8")
         self.hmac = hmac.new(secret, digestmod=hashlib.blake2s)
@@ -28,16 +27,6 @@ class RedisC2Worker(RedisClientWorker):
         self.sub_chan = f"send-to:{self.name}"
 
         self.greet_me = f"hello {self.name}".encode("utf-8")
-
-    def _load_secret(self, kwargs):
-        """Obtain the shared secret.  Modifies kwargs."""
-        secret = kwargs.pop("secret", None)
-        if secret is not None:
-            return secret
-        secvar = kwargs.pop("secret_env", None)
-        if secvar is None:
-            secvar = f"{self.name.upper()}_HMAC_SECRET"
-        return os.environ[secvar]
 
     def _reset_challenge(self):
         self.challenge = secrets.token_urlsafe()

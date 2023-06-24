@@ -27,6 +27,10 @@ class Worker(ABC):
     def WORKER_NAME(self):
         raise NotImplementedError
 
+    def load_secret(self, key: str):
+        key = "_".join([self.WORKER_NAME] + key.split(".")).upper()
+        return os.environ[key]
+
     @abstractmethod
     def run(self):
         log.info(f"Hi, I'm {self.WORKER_NAME}")
