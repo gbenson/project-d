@@ -2,7 +2,7 @@ import sys
 
 _print = print
 
-RED, GREEN = (f"\x1B[{cc}m" for cc in range(31, 33))
+RED, GREEN, YELLOW = (f"\x1B[{cc}m" for cc in range(31, 34))
 
 
 def print(*args, **kwargs):
