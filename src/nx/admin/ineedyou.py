@@ -118,7 +118,10 @@ class RedisC2Client:
             self.challenge = response[0]
             if len(response) != 2:
                 return None
-            return response[1].decode("utf-8")
+            result = response[1]
+            if result == b"None":
+                return None
+            return result.decode("utf-8")
 
     def _send(self, data):
         self.db.publish(self.pub_chan, data)
