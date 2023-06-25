@@ -29,10 +29,10 @@ class Worker(ABC):
         raise NotImplementedError
 
     def load_secret(self, key: str):
-        value = self._getenv_secret(key)
+        value = self._systemd_secret(key)
         if is_valid_secret(value):
             return value
-        value = self._readfile_secret(key)
+        value = self._getenv_secret(key)
         if is_valid_secret(value):
             return value
         raise KeyError(key)
@@ -41,13 +41,11 @@ class Worker(ABC):
         key = f"{self.WORKER_NAME}_{key.replace('.', '_')}".upper()
         return os.getenv(key)
 
-    def _readfile_secret(self, key: str):
-        nx_confdir = os.getenv("CONFIGURATION_DIRECTORY")
-        if not nx_confdir:
+    def _systemd_secret(self, key: str):
+        credsdir = os.getenv("CREDENTIALS_DIRECTORY")
+        if not credsdir:
             return None
-        return audited_open(
-            os.path.join(nx_confdir, self.WORKER_NAME.lower(), key),
-        ).read()
+        return audited_open(os.path.join(credsdir, key)).read().rstrip()
 
     @abstractmethod
     def run(self):

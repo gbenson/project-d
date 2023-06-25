@@ -4,10 +4,14 @@ import os
 from collections import Counter
 from stat import S_IMODE
 
-from ..exceptions import SecurityError
+from ..exceptions import (
+    ChecksNotImplementedError,
+    SecurityError,
+)
 
 
 def audited_open(filename, *args, **kwargs):
+    """Audit a secrets-containing file before reading from it."""
     if filename != os.path.realpath(filename):
         raise SecurityError
     result = open(filename, *args, **kwargs)
@@ -26,8 +30,7 @@ def others_can_access(stat_result):
     if mode & 0o007:
         return True
     if mode & 0o070:
-        # XXX check who's in stat_result.st_gid
-        pass
+        raise ChecksNotImplementedError
     return False
 
 
