@@ -9,6 +9,7 @@ from signal import signal, SIGHUP
 from scapy.all import ARP, Ether, IFACES, IP, sniff
 from scapy.arch.linux import IFF_LOOPBACK
 
+from .audit import audited_open, is_valid_secret
 from .logging import init_logging
 from ..services import Redis
 
@@ -28,19 +29,25 @@ class Worker(ABC):
         raise NotImplementedError
 
     def load_secret(self, key: str):
-        key = "_".join([self.WORKER_NAME] + key.split(".")).upper()
-        return os.environ[key]
-
-    def load_secret(self, key: str):
-        key_parts = key.split()
-        value = self._getenv_secret(key_parts)
-        if value:
+        value = self._getenv_secret(key)
+        if is_valid_secret(value):
+            return value
+        value = self._readfile_secret(key)
+        if is_valid_secret(value):
             return value
         raise KeyError(key)
 
-    def _getenv_secret(self, key: list[str]):
-        return os.getenv("_".join([self.WORKER_NAME] + key).upper())
+    def _getenv_secret(self, key: str):
+        key = f"{self.WORKER_NAME}_{key.replace('.', '_')}".upper()
+        return os.getenv(key)
 
+    def _readfile_secret(self, key: str):
+        nx_confdir = os.getenv("CONFIGURATION_DIRECTORY")
+        if not nx_confdir:
+            return None
+        return audited_open(
+            os.path.join(nx_confdir, self.WORKER_NAME.lower(), key),
+        ).read()
 
     @abstractmethod
     def run(self):
