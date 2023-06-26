@@ -4,6 +4,6 @@ per-file-ignores =
     # expected 2 blank lines, found 1
     src/nx/common/exceptions.py: E302
     # 'x' imported but unused
+    src/nx/audit/__init__.py: F401
     src/nx/common/__init__.py: F401
-    src/nx/common/audit/__init__.py: F401
     src/nx/services/__init__.py: F401

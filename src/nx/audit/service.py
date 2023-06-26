@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from base64 import b16decode
 from ipaddress import ip_address
 
-from ..exceptions import (
+from ..common.exceptions import (
     ChecksNotImplementedError,
     SecurityError,
 )

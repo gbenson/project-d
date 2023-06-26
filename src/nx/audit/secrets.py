@@ -4,7 +4,7 @@ import os
 from collections import Counter
 from stat import S_IMODE
 
-from ..exceptions import (
+from ..common.exceptions import (
     ChecksNotImplementedError,
     SecurityError,
 )

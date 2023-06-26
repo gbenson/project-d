@@ -9,9 +9,9 @@ from signal import signal, SIGHUP
 from scapy.all import ARP, Ether, IFACES, IP, sniff
 from scapy.arch.linux import IFF_LOOPBACK
 
-from .audit import audited_open, is_valid_secret
-from .logging import init_logging
+from ..audit import audited_open, is_valid_secret
 from ..services import Redis
+from .logging import init_logging
 
 log = logging.getLogger(__name__)
 

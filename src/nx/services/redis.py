@@ -4,7 +4,7 @@ from redis import (
     Redis as _Redis,
 )
 
-from ..common.audit import ServiceAuditor
+from ..audit import ServiceAuditor
 from ..common.exceptions import SecurityError
 
 
