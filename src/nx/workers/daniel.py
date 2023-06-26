@@ -1,6 +1,6 @@
 from scapy.all import DHCP, DHCPTypes, Ether
 
-from ..common import PacketSnifferWorker
+from ..common.workers import PacketSnifferWorker
 
 Unknown = object()  # Sentinel
 
