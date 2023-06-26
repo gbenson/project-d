@@ -1,4 +1,4 @@
-from ..common.workers import PacketSnifferWorker
+from ..common.packet_sniffer import PacketSnifferWorker
 
 
 class DHCPMonitorWorker(PacketSnifferWorker):

@@ -1,7 +1,7 @@
 from scapy.all import ARP
 from scapy.arch.linux import IFF_NOARP
 
-from ..common.workers import PacketSnifferWorker
+from ..common.packet_sniffer import PacketSnifferWorker
 
 
 class ARPMonitorWorker(PacketSnifferWorker):

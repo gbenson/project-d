@@ -1,6 +1,6 @@
 from scapy.all import IP, TCP
 
-from ..common.workers import PacketSnifferWorker
+from ..common.packet_sniffer import PacketSnifferWorker
 
 
 class HTTPMonitorWorker(PacketSnifferWorker):
