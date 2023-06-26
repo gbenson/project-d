@@ -28,6 +28,9 @@ class Worker(ABC):
     def WORKER_NAME(self):
         raise NotImplementedError
 
+    def __init__(self):
+        self.name = self.WORKER_NAME.lower()
+
     def load_secret(self, key: str):
         value = self._systemd_secret(key)
         if is_valid_secret(value):
@@ -82,11 +85,11 @@ class Worker(ABC):
 
 
 class RedisClientWorker(Worker):
-    def __init__(self, db=None):
+    def __init__(self, db=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         if db is None:
             db = Redis()
         self.db = db
-        self.name = self.WORKER_NAME.lower()
 
 
 class PacketSnifferWorker(RedisClientWorker):
