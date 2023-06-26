@@ -57,11 +57,11 @@ class Worker(ABC):
     def _handle_SIGHUP(self, signum, _):
         if self._waiting_to_restart:
             log.info("received second SIGHUP, forcing restart now")
-            self._checkpoint_worker()
+            self.checkpoint_worker()
         log.info("received SIGHUP, will restart at next checkpoint")
         self._waiting_to_restart = True
 
-    def _checkpoint_worker(self):
+    def checkpoint_worker(self):
         if not self._waiting_to_restart:
             return
         log.info("going down for restart")
@@ -131,7 +131,7 @@ class PacketSnifferWorker(RedisClientWorker):
         except:  # noqa: E722
             log.error("packet processing failed:", exc_info=True)
         finally:
-            self._checkpoint_worker()
+            self.checkpoint_worker()
 
     # XXX refactor tests, then remove this method
     def _process_packet(self, packet):

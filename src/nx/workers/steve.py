@@ -41,7 +41,7 @@ class RedisC2Worker(RedisClientWorker):
 
     def main_loop(self, p):
         for msg in p.listen():
-            self._checkpoint_worker()
+            self.checkpoint_worker()
             if msg is None:
                 continue
             if msg["type"] != "message":
