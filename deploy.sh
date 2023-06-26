@@ -11,8 +11,7 @@ cat <<EOF
 export PS4="-|\$USER@\$HOSTNAME| "
 set -exuo pipefail
 [ -f /opt/nx/workers/bin/activate ] || python3 -m venv /opt/nx/workers
-source /opt/nx/workers/bin/activate
-pip install --upgrade /var/lib/nx/wheels/$wheel
+/opt/nx/workers/bin/pip install --upgrade /var/lib/nx/wheels/$wheel
 EOF
 )
 
