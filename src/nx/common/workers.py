@@ -6,20 +6,11 @@ from abc import abstractmethod
 from scapy.all import ARP, Ether, IFACES, IP, sniff
 from scapy.arch.linux import IFF_LOOPBACK
 
-from ..services.redis import Redis
-from .worker import Worker
+from .redis_client import RedisClientWorker
 
 log = logging.getLogger(__name__)
 
 Unset = object()
-
-
-class RedisClientWorker(Worker):
-    def __init__(self, db=None, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if db is None:
-            db = Redis()
-        self.db = db
 
 
 class PacketSnifferWorker(RedisClientWorker):
