@@ -3,7 +3,7 @@ import logging
 
 from abc import abstractmethod
 
-from scapy.all import ARP, Ether, IFACES, IP, sniff
+from scapy.all import Ether, IFACES, sniff
 from scapy.arch.linux import IFF_LOOPBACK
 
 from .redis_client import RedisClientWorker
@@ -134,20 +134,32 @@ class PacketProcessor:
     def _packet_hash(self):
         return hashlib.blake2s(self._packet_hash_bytes()).hexdigest()
 
+    PACKET_HASH_FIXES = {
+        "IP": {
+            "id": 0xdead,
+            "chksum": 0xbeef,
+        },
+        "UDP": {
+            "chksum": 0x2323,
+        },
+        "BOOTP": {
+            "xid": 0xcafebabe,
+            "secs": 4 * 60,
+        },
+    }
+
     def _packet_hash_bytes(self):
         packet_bytes = self.packet.original
         if self.ether_layer is None:
             return packet_bytes
 
         copy_packet = self.ether_layer.__class__(packet_bytes)
-        ipv4_layer = copy_packet.getlayer(IP)
-        if ipv4_layer is None:
-            if ARP not in copy_packet:
-                self.record_issue("ether_payload")
-            return packet_bytes
-
-        ipv4_layer.id = 0xdead
-        ipv4_layer.chksum = 0xbeef
+        for layer in copy_packet.iterpayloads():
+            fixes = self.PACKET_HASH_FIXES.get(layer.__class__.__name__)
+            if fixes is None:
+                continue
+            for field, value in fixes.items():
+                setattr(layer, field, value)
 
         return bytes(copy_packet)
 
