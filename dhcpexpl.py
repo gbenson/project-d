@@ -48,13 +48,21 @@ def main():
         payloads = defaultdict(int)
         pkt_a = pkt_b = None
         for pkt in dhcp_by_srcdst[src_dst]:
-            pkt[IP].id = 0
-            pkt[IP].chksum = 0
-            pkt[UDP].chksum = 0
-            pkt[BOOTP].xid = 0
-            pkt[BOOTP].secs = 0
-            payloads[bytes(pkt)] += 1
 
+            for layer in pkt.iterpayloads():
+                if isinstance(layer, IP):
+                    layer.id = 0
+                    layer.chksum = 0
+                    continue
+                if isinstance(layer, UDP):
+                    layer.chksum = 0
+                    continue
+                if isinstance(layer, BOOTP):
+                    layer.xid = 0
+                    layer.secs = 0
+                    continue
+
+            payloads[bytes(pkt)] += 1
             if pkt_a is None:
                 pkt_a = pkt
             elif pkt_b is None and len(payloads) == 2:
