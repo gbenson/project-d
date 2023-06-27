@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from signal import signal, SIGHUP
 
 from ..audit.secrets import audited_open, is_valid_secret
-from .logging import init_logging
+from ..common.logging import init_logging
 
 log = logging.getLogger(__name__)
 

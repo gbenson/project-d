@@ -5,7 +5,7 @@ import logging
 import secrets
 import traceback
 
-from ..common.redis_client import RedisClientWorker
+from ..roles.redis_client import RedisClientWorker
 
 log = logging.getLogger(__name__)
 
