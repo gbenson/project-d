@@ -88,7 +88,7 @@ def test_unhandled_message_handling(extras):
     worker._process_packet(packet)
 
     expect_packet_hash = ("c4a161a628870b8f8e8643581e1a58f6"
-                          "9e59ac12a7955422895446a05f2044a0")
+                          "9e59ac12a7955422895446a05f2044:3")
     expect_packet_key = f"pkt_{expect_packet_hash}"
 
     assert worker.db.log == [
@@ -139,7 +139,7 @@ def test_request_stores_requested_ipv4():
     ))
 
     expect_packet_hash = ("9ec693b34c4be35ca96b5a5045a3d1d6"
-                          "a18690cdb2c1b39af603551b9321ece1")
+                          "a18690cdb2c1b39af603551b9321ec:3")
     expect_packet_key = f"pkt_{expect_packet_hash}"
 
     assert worker.db.log == [
@@ -190,7 +190,7 @@ def test_ack_retrieves_requested_ipv4():
     ))
 
     expect_packet_hash = ("675517db5f75fedce0f13ffdc8e3b367"
-                          "fffc801dfe07ce49163fa88be4712d00")
+                          "fffc801dfe07ce49163fa88be4712d:3")
     expect_packet_key = f"pkt_{expect_packet_hash}"
 
     assert worker.db.log == [
@@ -264,7 +264,7 @@ def test_nak():
     ))
 
     expect_packet_hash = ("433001c96676681955da499ddf91f937"
-                          "7156320f2430f2bd7a93ee3d46b330ba")
+                          "7156320f2430f2bd7a93ee3d46b330:3")
     expect_packet_key = f"pkt_{expect_packet_hash}"
 
     assert worker.db.log == [

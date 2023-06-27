@@ -132,7 +132,15 @@ class PacketProcessor:
         return self._ether_layer
 
     def _packet_hash(self):
-        return hashlib.blake2s(self._packet_hash_bytes()).hexdigest()
+        bytes_to_hash, version = self._packet_hash_bytes_version()
+        hash = hashlib.blake2s(bytes_to_hash).hexdigest()
+        # 0 = raw data
+        # 1 = IPv4 id, chksum wiped for all packets (IPv4 and not)
+        # 2 = IPv4 id, chksum wiped
+        # 3 = versioned; IPv4 id, chksum; UDP chksum; BOOTP xid;secs wiped
+        if version < 3:
+            return hash
+        return f"{hash[:-2]}:3"
 
     PACKET_HASH_FIXES = {
         "IP": {
@@ -148,20 +156,24 @@ class PacketProcessor:
         },
     }
 
-    def _packet_hash_bytes(self):
+    def _packet_hash_bytes_version(self):
+        version = 2
         packet_bytes = self.packet.original
         if self.ether_layer is None:
-            return packet_bytes
+            return packet_bytes, version
 
         copy_packet = self.ether_layer.__class__(packet_bytes)
         for layer in copy_packet.iterpayloads():
-            fixes = self.PACKET_HASH_FIXES.get(layer.__class__.__name__)
+            layername = layer.__class__.__name__
+            fixes = self.PACKET_HASH_FIXES.get(layername)
             if fixes is None:
                 continue
+            if layername != "IP":
+                version = max(version, 3)
             for field, value in fixes.items():
                 setattr(layer, field, value)
 
-        return bytes(copy_packet)
+        return bytes(copy_packet), version
 
     def _record_raw_packet(self):
         fields = self.common_fields.copy()
