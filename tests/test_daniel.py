@@ -172,10 +172,13 @@ def test_request_stores_requested_ipv4():
             ("last_DHCPREQUEST_seen", 1686086875.268219),
         ]],
         ["hset", "mac_00:0d:f7:12:ca:fe", [
-            ("device_name", "Daniel's phone"),
+            ("dhcp_device_name", "Daniel's phone"),
+            ("dhcp_vendor_class_id", "Acme Phones Inc"),
             ("requested_ipv4", "1.2.3.4"),
             ("requested_ipv4_at", 1686086875.268219),
-            ("vendor_class_id", "Acme Phones Inc")]],
+        ]],
+        ["hdel", "mac_00:0d:f7:12:ca:fe",
+         "device_name", "vendor_class_id"],
         ["hset", "heartbeats", [
             ("daniel", 1686086875.268219)]],
         "execute"]

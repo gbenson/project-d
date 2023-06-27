@@ -107,17 +107,26 @@ class DHCPMonitorWorker(PacketSnifferWorker):
 
         if options.message_type in (1, 3):  # DISCOVER, REQUEST
             mac_fields = {}
+            delete_fields = None  # XXX remove once cycled
 
             if options.hostname is not None:
-                mac_fields["device_name"] = options.hostname
+                mac_fields["dhcp_device_name"] = options.hostname
             if options.vendor_class_id is not None:
-                mac_fields["vendor_class_id"] = options.vendor_class_id
+                mac_fields["dhcp_vendor_class_id"] = options.vendor_class_id
             if options.requested_addr is not None:
                 mac_fields["requested_ipv4"] = options.requested_addr
                 mac_fields["requested_ipv4_at"] = packet.time
 
             if mac_fields:
                 pipeline.hset(mac_key, mapping=mac_fields)
+
+                delete_fields = [
+                    field[5:]
+                    for field in mac_fields
+                    if field.startswith("dhcp_")
+                ]
+            if delete_fields:
+                pipeline.hdel(mac_key, *delete_fields)
 
         elif options.message_type == 5:  # ACK (server->client)
             ipv4addr = options.server_id
