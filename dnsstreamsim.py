@@ -2,7 +2,7 @@
 Simulate the arrival of the big list of DNS packets.
 """
 from redis import Redis, WatchError
-from scapy.all import Ether, DNS
+from scapy.all import Ether, DNS, dnsqtypes, dnsclasses
 
 from nx.roles.packet_sniffer import calc_packet_hash
 
@@ -88,8 +88,7 @@ class StreamerTestWorker:
             if not entries:
                 continue
 
-            if len(entries) == 2:
-                self.handle_request_response(stream_id, entries)
+            if self.handle_query_response(stream_id, entries):
                 continue
 
             print(stream_id, entries)
@@ -133,20 +132,53 @@ class StreamerTestWorker:
         except WatchError as e:
             pass  # New packets arrived => last seen is fine
 
-    def handle_request_response(self, stream_id, stream_entries):
-        print(f"  popped RR from dns_stream:{stream_id}")
-        packets = [self._rehydrate_packet(*e) for e in stream_entries]
-        packets[0].show()
-        packets[1].show()
-        raise SystemExit
-
     def _rehydrate_packet(self, timestamp, packet_hash):
         packet_key = f"pkt_{packet_hash}"
         packet_data = self.db.hget(packet_key, "raw_bytes")
         packet = Ether(packet_data)
         packet.time = timestamp
-        print(len(packet))
         return packet
+
+    def handle_query_response(self, stream_id, stream_entries):
+        if len(stream_entries) != 2:
+            return False
+
+        packets = [self._rehydrate_packet(*e) for e in stream_entries]
+
+        q, r = [packet.getlayer(DNS) for packet in packets]
+        assert q is not None
+        assert r is not None
+
+        assert q.opcode == 0  # QUERY
+        assert r.opcode == 0
+        assert q.qr == 0  # query
+        assert r.qr == 1  # response
+        assert not q.tc  # truncated
+        assert not r.tc
+        assert q.rcode == 0  # no error condition
+        assert r.rcode == 0  # no error condition
+
+        assert q.qdcount == 1  # num entries in question section
+        assert q.ancount == 0
+        assert q.nscount == 0
+        assert q.arcount == 0
+
+        assert r.qdcount == 1  # num entries in question section
+        if r.ancount == 0:
+            r.show()
+        assert r.ancount > 0  # num resource records in answer section
+        assert r.nscount == 0
+        assert r.arcount == 0
+
+        assert q.qd == r.qd  # the entire question section
+        #print(repr(q.qd))
+        assert packets[0][Ether].src == "00:04:ed:f4:00:fd"
+        print(f" Q?  {q.qd[0].qname.decode():}"
+              f"  {dnsclasses[q.qd[0].qclass]}"
+              f"  {dnsqtypes[q.qd[0].qtype]}")
+        #print(repr(r.an))
+
+        return True
 
 
 class OversizeStreamError(Exception):
