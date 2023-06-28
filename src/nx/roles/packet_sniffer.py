@@ -154,6 +154,9 @@ class PacketProcessor:
             "xid": 0xcafebabe,
             "secs": 4 * 60,
         },
+        "DNS": {
+            "id": 0x5353,
+        },
     }
 
     def _packet_hash_bytes_version(self):
