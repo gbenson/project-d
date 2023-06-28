@@ -203,3 +203,11 @@ class PacketProcessor:
     def record_issue(self, category):
         """Note that there was an issue processing this packet."""
         self._issue_categories.append(f"unhandled:pkts:{category}")
+
+    @classmethod
+    def calc_packet_hash(cls, packet):
+        """Return the hash for the specified packet."""
+        return cls(None, packet)._packet_hash()
+
+
+calc_packet_hash = PacketProcessor.calc_packet_hash
