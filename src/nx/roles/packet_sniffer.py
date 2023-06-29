@@ -3,7 +3,7 @@ import logging
 
 from abc import abstractmethod
 
-from scapy.all import Ether, IFACES, sniff
+from scapy.all import Ether, DNS, IFACES, sniff
 from scapy.arch.linux import IFF_LOOPBACK
 
 from .redis_client import RedisClientWorker
@@ -175,6 +175,8 @@ class PacketProcessor:
         if self.ether_layer is None:
             return packet_bytes, version
 
+        is_dns = self.ether_layer.getlayer(DNS) is not None
+
         copy_packet = self.ether_layer.__class__(packet_bytes)
         for layer in copy_packet.iterpayloads():
             layername = layer.__class__.__name__
@@ -185,6 +187,15 @@ class PacketProcessor:
                 version = max(version, 3)
             for field, value in fixes.items():
                 setattr(layer, field, value)
+
+            if not is_dns:
+                continue
+            if layername != "UDP":
+                continue
+            if layer.sport != 53:
+                layer.sport = 0
+            if layer.dport != 53:
+                layer.dport = 0
 
         return bytes(copy_packet), version
 
