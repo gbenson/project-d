@@ -24,11 +24,7 @@ class ARPMonitorWorker(PacketSnifferWorker):
         if ipv4addr == "0.0.0.0":
             return
 
-        pipeline.hset(mac_key, "ipv4", ipv4addr)
-
-        ipv4_key = f"ipv4_{ipv4addr}"
-        pipeline.hset(ipv4_key, "mac", macaddr, mapping=common_fields)
-        pipeline.sadd("ipv4s", ipv4addr)
+        self.record_ipv4_sighting(ipv4addr)
 
     # Trying this on something with IFF_NOARP gets you the following:
     # ERROR: Cannot set filter: Failed to compile filter expression arp (-1)

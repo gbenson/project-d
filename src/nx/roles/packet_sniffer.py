@@ -14,6 +14,10 @@ Unset = object()
 
 
 class PacketSnifferWorker(RedisClientWorker):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._pp = None
+
     @property
     def interfaces(self):
         """An iterable of network interfaces to operate on."""
@@ -57,9 +61,15 @@ class PacketSnifferWorker(RedisClientWorker):
         finally:
             self.checkpoint_worker()
 
-    # XXX refactor tests, then remove this method
     def _process_packet(self, packet):
-        return PacketProcessor(self, packet).run()
+        self._pp = PacketProcessor(self, packet)
+        try:
+            return self._pp.run()
+        finally:
+            self._pp = None
+
+    def record_ipv4_sighting(self, *args, **kwargs):
+        return self._pp.record_ipv4_sighting(*args, **kwargs)
 
 
 class PacketProcessor:
@@ -202,6 +212,26 @@ class PacketProcessor:
 
         key = f"macpkts_{self.src_mac}"
         pipeline.hset(key, self.packet_hash, self.packet.time)
+
+    def record_ipv4_sighting(self, ipv4_addr, mac_addr=None):
+        """Associate `ipv4_addr` with `mac_addr`."""
+        if mac_addr is None:
+            mac_addr = self.src_mac
+            mac_key = self.mac_key
+        else:
+            mac_key = f"mac_{mac_addr}"
+        pipeline = self.pipeline
+
+        pipeline.hset(mac_key, "ipv4", ipv4_addr)
+
+        pipeline.hset(
+            f"ipv4_{ipv4_addr}",
+            "mac",
+            mac_addr,
+            mapping=self.common_fields
+        )
+
+        pipeline.sadd("ipv4s", ipv4_addr)
 
     def record_issue(self, category):
         """Note that there was an issue processing this packet."""
