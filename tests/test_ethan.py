@@ -5,47 +5,6 @@ from scapy.all import Ether
 from nx.workers.ethan import IP, TCP, HTTPMonitorWorker
 
 
-class MockDatabase:
-    def __init__(self):
-        self.log = []
-
-    def pipeline(self, transaction=None):
-        return MockPipeline(self.log)
-
-
-class MockPipeline:
-    def __init__(self, log):
-        self.log = log
-
-    def hdel(self, *args):
-        self.log.append(["hdel", *args])
-
-    def hincrby(self, *args):
-        self.log.append(["hincrby", args])
-        return 23
-
-    def hset(self, *args, **kwargs):
-        self._hset("hset", *args, **kwargs)
-
-    def hsetnx(self, *args, **kwargs):
-        self._hset("hsetnx", *args, **kwargs)
-
-    def _hset(self, cmd, name, key=None, value=None, mapping={}):
-        args = mapping.copy()
-        if None not in (key, value):
-            args.update({key: value})
-        if "raw_bytes" in args:
-            args["raw_bytes"] = b">>raw bytes<<"
-        self.log.append([cmd, name, list(sorted(args.items()))])
-
-    def sadd(self, key, *args):
-        self.log.append(["sadd", key, args])
-
-    def execute(self):
-        self.log.append("execute")
-        print(self.log)
-
-
 def make_test_packet(**kwargs):
     _kwargs, kwargs = kwargs, dict(
         hwsrc="00:0D:F7:12:CA:FE",
@@ -91,9 +50,9 @@ def make_test_packet(**kwargs):
       "ebad88db75cc6d5dcd9ebd17abed0c2f",
       ),
      ))
-def test_regular_packets(kwargs, expect_packet_hash):
+def test_regular_packets(mockdb, kwargs, expect_packet_hash):
     """It handles ordinary packets."""
-    worker = HTTPMonitorWorker(MockDatabase())
+    worker = HTTPMonitorWorker(mockdb)
     worker._process_packet(make_test_packet(**kwargs))
 
     expect_packet_key = f"pkt_{expect_packet_hash}"

@@ -5,47 +5,6 @@ from scapy.all import Ether
 from nx.workers.carla import ARP, ARPMonitorWorker
 
 
-class MockDatabase:
-    def __init__(self):
-        self.log = []
-
-    def pipeline(self, transaction=None):
-        return MockPipeline(self.log)
-
-
-class MockPipeline:
-    def __init__(self, log):
-        self.log = log
-
-    def hdel(self, *args):
-        self.log.append(["hdel", *args])
-
-    def hincrby(self, *args):
-        self.log.append(["hincrby", args])
-        return 23
-
-    def hset(self, *args, **kwargs):
-        self._hset("hset", *args, **kwargs)
-
-    def hsetnx(self, *args, **kwargs):
-        self._hset("hsetnx", *args, **kwargs)
-
-    def _hset(self, cmd, name, key=None, value=None, mapping={}):
-        args = mapping.copy()
-        if None not in (key, value):
-            args.update({key: value})
-        if "raw_bytes" in args:
-            args["raw_bytes"] = b">>raw bytes<<"
-        self.log.append([cmd, name, list(sorted(args.items()))])
-
-    def sadd(self, key, *args):
-        self.log.append(["sadd", key, args])
-
-    def execute(self):
-        self.log.append("execute")
-        print(self.log)
-
-
 def make_test_packet(**kwargs):
     _kwargs, kwargs = kwargs, dict(
         op=1,
@@ -66,9 +25,9 @@ def make_test_packet(**kwargs):
     return packet
 
 
-def test_unhandled_arp_packet():
+def test_unhandled_arp_packet(mockdb):
     """It ignores packets with unhandled operations."""
-    worker = ARPMonitorWorker(MockDatabase())
+    worker = ARPMonitorWorker(mockdb)
     worker._process_packet(make_test_packet(op=4))
 
     expect_packet_hash = ("3bd74d3e6bd2a35db46e76180db0b8a9"
@@ -115,9 +74,9 @@ def test_unhandled_arp_packet():
       "4cdf643ce0a21afb311885fc28172569"
       "b74a90dbfe07bbbe25fd2302cd4c9dc1"),
      ))
-def test_regular_packets(op, expect_packet_hash):
+def test_regular_packets(mockdb, op, expect_packet_hash):
     """It handles ordinary who-has and is-at packets."""
-    worker = ARPMonitorWorker(MockDatabase())
+    worker = ARPMonitorWorker(mockdb)
     worker._process_packet(make_test_packet(op=op))
 
     expect_packet_key = f"pkt_{expect_packet_hash}"
@@ -163,9 +122,9 @@ def test_regular_packets(op, expect_packet_hash):
         "execute"]
 
 
-def test_unspecified_ipv4_not_stored():
+def test_unspecified_ipv4_not_stored(mockdb):
     """It doesn't store the unspecified IPv4 address."""
-    worker = ARPMonitorWorker(MockDatabase())
+    worker = ARPMonitorWorker(mockdb)
     worker._process_packet(make_test_packet(psrc="0.0.0.0"))
 
     expect_packet_hash = ("d9f57a055d070c56833bc0483e56b998"

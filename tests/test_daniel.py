@@ -5,55 +5,6 @@ from scapy.all import BOOTP, IP, UDP
 from nx.workers.daniel import DHCP, DHCPMonitorWorker, Ether
 
 
-class MockDatabase:
-    def __init__(self):
-        self.log = []
-
-    def pipeline(self, transaction=None):
-        return MockPipeline(self.log)
-
-    def hmget(self, *args):
-        self.log.append(["hmget", args])
-        return b"5.6.7.8", b"1686086874.682192"
-
-    def incr(self, *args):
-        self.log.append(["incr", args])
-        return 23
-
-
-class MockPipeline:
-    def __init__(self, log):
-        self.log = log
-
-    def hdel(self, *args):
-        self.log.append(["hdel", *args])
-
-    def hincrby(self, *args):
-        self.log.append(["hincrby", args])
-        return 23
-
-    def hset(self, *args, **kwargs):
-        self._hset("hset", *args, **kwargs)
-
-    def hsetnx(self, *args, **kwargs):
-        self._hset("hsetnx", *args, **kwargs)
-
-    def _hset(self, cmd, name, key=None, value=None, mapping={}):
-        args = mapping.copy()
-        if None not in (key, value):
-            args.update({key: value})
-        if "raw_bytes" in args:
-            args["raw_bytes"] = b">>raw bytes<<"
-        self.log.append([cmd, name, list(sorted(args.items()))])
-
-    def sadd(self, key, *args):
-        self.log.append(["sadd", key, args])
-
-    def execute(self):
-        self.log.append("execute")
-        print(self.log)
-
-
 def make_test_packet(message_type=None, **kwargs):
     if message_type is not None:
         kwargs["message-type"] = message_type
@@ -74,9 +25,9 @@ def make_test_packet(message_type=None, **kwargs):
 
 
 @pytest.mark.parametrize("extras", ((), ["end"] + ["pad"] * 4))
-def test_unhandled_message_handling(extras):
+def test_unhandled_message_handling(mockdb, extras):
     """Messages we don't understand are retained for analysis."""
-    worker = DHCPMonitorWorker(MockDatabase())
+    worker = DHCPMonitorWorker(mockdb)
     packet = make_test_packet(
         message_type=42,
         max_dhcp_size=1500,
@@ -126,9 +77,9 @@ def test_unhandled_message_handling(extras):
         "execute"]
 
 
-def test_request_stores_requested_ipv4():
+def test_request_stores_requested_ipv4(mockdb):
     """DHCPREQUEST stores requested_ipv4."""
-    worker = DHCPMonitorWorker(MockDatabase())
+    worker = DHCPMonitorWorker(mockdb)
     worker._process_packet(make_test_packet(
         message_type=3,
         requested_addr="1.2.3.4",
@@ -184,9 +135,14 @@ def test_request_stores_requested_ipv4():
         "execute"]
 
 
-def test_ack_retrieves_requested_ipv4():
+def test_ack_retrieves_requested_ipv4(mockdb):
     """DHCPACK retrieves requested_ipv4."""
-    worker = DHCPMonitorWorker(MockDatabase())
+    mockdb.push_mock_response(
+        "hmget mac_c8:e1:30:ba:be:23 requested_ipv4 requested_ipv4_at",
+        ("5.6.7.8", 1686086874.682192),
+    )
+
+    worker = DHCPMonitorWorker(mockdb)
     worker._process_packet(make_test_packet(
         message_type=5,
         server_id="4.3.2.1",
@@ -197,6 +153,9 @@ def test_ack_retrieves_requested_ipv4():
     expect_packet_key = f"pkt_{expect_packet_hash}"
 
     assert worker.db.log == [
+        ["hmget", "mac_c8:e1:30:ba:be:23", (
+            "requested_ipv4",
+            "requested_ipv4_at")],
         ["hset", expect_packet_key, [
             ("last_seen", 1686086875.268219),
             ("last_seen_by", "daniel"),
@@ -235,10 +194,6 @@ def test_ack_retrieves_requested_ipv4():
             ("mac", "00:0d:f7:12:ca:fe"),
         ]],
         ["sadd", "ipv4s", ("4.3.2.1",)],
-        ["hmget", (
-            "mac_c8:e1:30:ba:be:23",
-            "requested_ipv4",
-            "requested_ipv4_at")],
         ["hset", "mac_c8:e1:30:ba:be:23", [
             ("ipv4", "5.6.7.8"),
             ("last_seen", 1686086875.268219),
@@ -258,9 +213,9 @@ def test_ack_retrieves_requested_ipv4():
         "execute"]
 
 
-def test_nak():
+def test_nak(mockdb):
     """DHCPNAK is logged as expected."""
-    worker = DHCPMonitorWorker(MockDatabase())
+    worker = DHCPMonitorWorker(mockdb)
     worker._process_packet(make_test_packet(
         message_type=6,
         error_message=b"go 'way fool",
