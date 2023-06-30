@@ -20,14 +20,40 @@ class StreamerTestWorker:
         return packet
 
     def run_simulation(self):
+        sequences = []
+        sequence_ids = {}
+
         for pkt_hash in self.db.lrange("dns_tcp_for_reassembly", 0, -1):
             pkt_hash = pkt_hash.decode()
             packet = self._rehydrate_packet(pkt_hash)
-            if DNS not in packet:
-                assert packet[TCP].flags in ("S", "SA", "A", "FA")
+            tcp = packet[TCP]
+            seq, ack, flags = tcp.seq, tcp.ack, tcp.flags
+            print(seq, flags)
+            if seq == 1722820901:
+                packet.show()
+                
+            if "A" in flags:
+                assert "S" in flags or seq - 1 in sequence_ids
+                assert ack - 1 in sequence_ids
+            if "S" in flags:
+                assert "A" in flags or ack == 0
+                assert seq not in sequence_ids
+                sequence_ids[seq] = len(sequences)
+                sequences.append([packet])
                 continue
-            if packet[TCP].flags == "PA":
+            if seq in sequence_ids:
+                assert "P" in flags
+            else:
+                sequence_ids[seq] = sequence_ids[seq - 1]
+            sequences[sequence_ids[seq]].append(packet)
+            if flags == "A":
                 continue
+            if flags == "PA":
+                assert seq in sequence_ids  # ??
+                assert DNS in tcp
+                continue
+            
+            print(sequence_ids)
             packet.show()
             break
 
