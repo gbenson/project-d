@@ -14,7 +14,6 @@ class StreamerTestWorker:
         self.db = Redis()
         self._cleanup()
         self.start_time = None
-        self.randoms = []
 
     def _cleanup(self):
         """Wipe output of previous versions of this script."""
@@ -27,7 +26,6 @@ class StreamerTestWorker:
         pipeline.delete("dns_stream_last_seen")
         # Version 2 (unstreamed information miner)
         pipeline.delete("dns_errors")
-        pipeline.delete("dns_tcp_for_reassembly")
 
         pipeline.execute()
 
@@ -51,8 +49,7 @@ class StreamerTestWorker:
         print(f"{len(self.questions)} questions => "
               f"{len(self.queries)} queries, "
               f"{len(self.responses)} responses, "
-              f"{len(self.oddballs)} oddballs, "
-              f"and {len(self.randoms)} TCP packets")
+              f"and {len(self.oddballs)} error responses.")
 
         print("\nTop 30:")
         for i, c_q in enumerate(sorted((-v, k) for k, v in self.questions.items())):
@@ -266,21 +263,17 @@ class StreamerTestWorker:
 
     def process_packet(self, packet, packet_hash, **kwargs):
         ip4 = packet.getlayer(IP)
-        udp = ip4.getlayer(UDP)
-        if udp is None:
-            self.randoms.append(packet)
-            self.db.rpush("dns_tcp_for_reassembly", packet_hash)
-            #self.db.ltrim( ??
-            return  # XXX do something with these?
-        dns = udp.getlayer(DNS)
-
         try:
-            self._process_packet(ip4, dns, packet_hash)
+            self._process_packet(ip4, packet_hash)
         except Exception:
             packet.show()
             raise
 
-    def _process_packet(self, ip4, dns, packet_hash):
+    def _process_packet(self, ip4, packet_hash):
+        dns = ip4.getlayer(DNS)
+        if dns is None:
+            assert ip4[TCP].flags in ("S", "SA", "A", "FA")
+            return  # connection administration
         print(f" -: dns.id = {dns.id}")
 
         assert dns.opcode == 0  # QUERY
