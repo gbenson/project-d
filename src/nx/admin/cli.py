@@ -15,13 +15,19 @@ class Reporter(Redis):
         self._report_heartbeats()
 
     def _report_heartbeats(self):
-        heartbeats = self.hgetall("heartbeats")
-        if not heartbeats:
+        w_heartbeats = self.hgetall("heartbeats")
+        i_heartbeats = self.hgetall("interfaces")
+        if not (w_heartbeats or i_heartbeats):
             return
         print("Heartbeats:")
-        for worker, seen in sorted(heartbeats.items()):
+        for worker, seen in sorted(w_heartbeats.items()):
             ts = self.format_timestamp(seen, justify=True)
             print(f"  {worker:7}: {ts}")
+        if w_heartbeats and i_heartbeats:
+            print("   :")
+        for interface, seen in sorted(i_heartbeats.items()):
+            ts = self.format_timestamp(seen, justify=True)
+            print(f"  {interface:16}: {ts}")
         print()
 
     def _report_machines(self):
