@@ -55,6 +55,9 @@ def test_unhandled_message_handling(mockdb, extras):
             ("first_seen", 1686086875.268219),
         ]],
         ["hincrby", (expect_packet_key, "num_sightings", 1)],
+        ["hset", "interfaces", [
+            ("wlx0023cafebabe", 1686086875.268219),
+        ]],
         ["sadd", "macs", ("00:0d:f7:12:ca:fe",)],
         ["hset", "mac_00:0d:f7:12:ca:fe", [
             ("last_seen", 1686086875.268219),
@@ -106,6 +109,9 @@ def test_request_stores_requested_ipv4(mockdb):
             ("first_seen", 1686086875.268219),
         ]],
         ["hincrby", (expect_packet_key, "num_sightings", 1)],
+        ["hset", "interfaces", [
+            ("wlx0023cafebabe", 1686086875.268219),
+        ]],
         ["sadd", "macs", ("00:0d:f7:12:ca:fe",)],
         ["hset", "mac_00:0d:f7:12:ca:fe", [
             ("last_seen", 1686086875.268219),
@@ -168,6 +174,9 @@ def test_ack_retrieves_requested_ipv4(mockdb):
             ("first_seen", 1686086875.268219),
         ]],
         ["hincrby", (expect_packet_key, "num_sightings", 1)],
+        ["hset", "interfaces", [
+            ("wlx0023cafebabe", 1686086875.268219),
+        ]],
         ["sadd", "macs", ("00:0d:f7:12:ca:fe",)],
         ["hset", "mac_00:0d:f7:12:ca:fe", [
             ("last_seen", 1686086875.268219),
@@ -238,6 +247,9 @@ def test_nak(mockdb):
             ("first_seen", 1686086875.268219),
         ]],
         ["hincrby", (expect_packet_key, "num_sightings", 1)],
+        ["hset", "interfaces", [
+            ("wlx0023cafebabe", 1686086875.268219),
+        ]],
         ["sadd", "macs", ("00:0d:f7:12:ca:fe",)],
         ["hset", "mac_00:0d:f7:12:ca:fe", [
             ("last_seen", 1686086875.268219),

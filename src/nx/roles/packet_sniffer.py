@@ -212,6 +212,9 @@ class PacketProcessor:
         pipeline.hsetnx(key, "first_seen", self.packet.time)
         pipeline.hincrby(key, "num_sightings", 1)
 
+        heartbeat = self.packet.sniffed_on, self.packet.time
+        self.pipeline.hset("interfaces", *heartbeat)
+
     def _record_device_sighting(self):
         pipeline = self.pipeline
 
