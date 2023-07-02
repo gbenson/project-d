@@ -68,20 +68,44 @@ class PacketSnifferWorker(RedisClientWorker):
         finally:
             self._pp = None
 
+    @property
+    def pipeline(self):
+        return self._pp.pipeline
+
+    @property
+    def mac_key(self):
+        return self._pp.mac_key
+
+    @property
+    def packet_hash(self):
+        return self._pp.packet_hash
+
+    @property
+    def src_mac(self):
+        return self._pp.src_mac
+
+    def expire_packet_after(self, *args, **kwargs):
+        return self._pp.expire_packet_after(*args, **kwargs)
+
     def record_ipv4_sighting(self, *args, **kwargs):
         return self._pp.record_ipv4_sighting(*args, **kwargs)
+
+    def record_issue(self, *args, **kwargs):
+        return self._pp.record_issue(*args, **kwargs)
 
 
 class PacketProcessor:
     def __init__(self, worker, packet):
         self.worker = worker
         self.packet = packet
+        self.pipeline = None
 
         self._issue_categories = []
 
         self._ether_layer = Unset
         self.packet_hash = None
         self.src_mac = None
+        self.mac_key = None
 
     def run(self):
         heartbeat = self.worker.name, self.packet.time
@@ -90,6 +114,8 @@ class PacketProcessor:
             try:
                 try:
                     self._run()
+                except UnhandledPacket as e:
+                    self.record_issue(str(e))
                 finally:
                     for set in self._issue_categories:
                         self.pipeline.sadd(set, self.packet_hash)
@@ -255,10 +281,21 @@ class PacketProcessor:
         """Note that there was an issue processing this packet."""
         self._issue_categories.append(f"unhandled:pkts:{category}")
 
+    def expire_packet_after(self, num_seconds):
+        if self.packet_key is None:
+            return
+        if self._issue_categories:
+            return
+        self.pipeline.expire(self.packet_key, num_seconds)
+
     @classmethod
     def calc_packet_hash(cls, packet):
         """Return the hash for the specified packet."""
         return cls(None, packet)._packet_hash()
+
+
+class UnhandledPacket(RuntimeError):
+    pass
 
 
 calc_packet_hash = PacketProcessor.calc_packet_hash
