@@ -3,7 +3,7 @@ import logging
 
 from abc import abstractmethod
 
-from scapy.all import Ether, DNS, IFACES, sniff
+from scapy.all import Ether, TCP, DNS, IFACES, sniff
 from scapy.arch.linux import IFF_LOOPBACK
 
 from .redis_client import RedisClientWorker
@@ -173,6 +173,10 @@ class PacketProcessor:
         version = 2
         packet_bytes = self.packet.original
         if self.ether_layer is None:
+            return packet_bytes, version
+
+        if TCP in self.ether_layer:
+            version = max(version, 3)
             return packet_bytes, version
 
         is_dns = self.ether_layer.getlayer(DNS) is not None

@@ -37,8 +37,8 @@ def make_test_packet(**kwargs):
     ((dict(
         sport=80,
       ),
-      "b9212fcd0643395644ca74a33129217b"
-      "c81ba96934ed0786dd6a432af4db51e0",
+      "02490a0077f712cf9a7f32b99b1f799f"
+      "e70ef653c7d889cb26391c1fce1151:3",
       ),
      (dict(
          dst="1.2.3.4",
@@ -46,8 +46,8 @@ def make_test_packet(**kwargs):
          src="8.7.6.5",
          sport=23456,
       ),
-      "49fc90fcee3c6b88baa090691f3b5dd5"
-      "ebad88db75cc6d5dcd9ebd17abed0c2f",
+      "8a45c4ce30b2ddaf63d414ea4503f3e5"
+      "68b38ef488865c1e9194e55932114d:3",
       ),
      ))
 def test_regular_packets(mockdb, kwargs, expect_packet_hash):
