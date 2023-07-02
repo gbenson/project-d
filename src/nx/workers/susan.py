@@ -68,6 +68,7 @@ class DNSMonitorWorker(PacketSnifferWorker):
         pipeline.hset(key, mapping=fields)
         for field in ("first_seen", f"first_seen_from_{self.src_mac}"):
             pipeline.hsetnx(key, field, packet.time)
+        pipeline.hincrby(key, "num_sightings", 1)
 
         key = f"dnsq_pkts:{question}"
         pipeline.hset(key, self.packet_hash, packet.time)

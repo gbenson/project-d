@@ -105,6 +105,7 @@ def test_basic_ipv4_udp_query(mockdb):
         ["hsetnx", "dnsq:nx.example.com.:IN:A", [
             ("first_seen_from_00:0d:f7:12:ca:fe", 1686086875.268219),
         ]],
+        ["hincrby", ("dnsq:nx.example.com.:IN:A", "num_sightings", 1)],
         ["hset", "dnsq_pkts:nx.example.com.:IN:A", [
             (expect_packet_hash, 1686086875.268219),
         ]],
