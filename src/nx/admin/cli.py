@@ -1,6 +1,7 @@
 import os
 import sys
 
+from collections import defaultdict
 from datetime import datetime
 from numbers import Real
 
@@ -12,6 +13,7 @@ from .redis import Redis
 class Reporter(Redis):
     def report(self):
         self._report_machines()
+        self._report_dns()
         self._report_heartbeats()
 
     def _report_heartbeats(self):
@@ -65,6 +67,49 @@ class Reporter(Redis):
                     line = line[:max_linelen - 3] + "..."
                 print(line)
             print()
+
+    def _report_dns(self, limit=20):
+        keys = [f"dnsq:{q}" for q in self.smembers("dns_queries")]
+        if not keys:
+            return
+        pipeline = self.pipeline()
+        for key in keys:
+            pipeline.hget(key, "num_sightings")
+        queries = defaultdict(int)
+        for question, count in zip(keys, pipeline.execute()):
+            question = question.split(":")[1:]
+            if question[-2] == "IN":
+                if question[-1] == "PTR":
+                    continue
+                if question[-1] == "SRV":
+                    continue  # ...for now...
+                # if question[-1] == "HTTPS":
+                #    continue  # ...for now (will be in A/AAAA also)
+                if question[-1] in {"A", "AAAA", "HTTPS"}:
+                    question = question[:-2]
+            question = ":".join(question).rstrip(".")
+            # for suffix in self.SUFFIXES:
+            #    if question.endswith(suffix):
+            #        question = f"*{suffix}"
+            #        break
+            queries[question] += int(count)
+        print(f"DNS top {limit}:")
+        position, last_count = 0, None
+        for count, question in sorted((-c, q) for q, c in queries.items()):
+            count = -count
+            if count == last_count:
+                prefix = "   "
+            else:
+                position += 1
+                if position > limit:
+                    break
+                prefix = f"{position:>2}:"
+                last_count = count
+            line = f"{prefix} {count:>4}:  {question}"
+            # if "*" in question:
+            #    line = f"\x1B[33m{line}\x1B[0m"
+            print(line)
+        print()
 
     @classmethod
     def format_timestamp(cls, ts, justify=False):
