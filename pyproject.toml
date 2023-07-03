@@ -18,6 +18,7 @@ dev = [
 [project.scripts]
 nxa = "nx.admin.cli:main"
 inu = "nx.admin.ineedyou:main"
+dbm =  "nx.admin.dbm:main"
 carla = "nx.workers.carla:main"
 daniel = "nx.workers.daniel:main"
 ethan = "nx.workers.ethan:main"
