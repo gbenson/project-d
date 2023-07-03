@@ -19,6 +19,37 @@ def test_import(worker_client):
     assert worker.globals == {"sys": sys}
 
 
+def test_import_X(worker_client):
+    """The `import` local command works."""
+    worker, client = worker_client
+    client.execute("import urllib")
+    assert list(worker.globals.keys()) == ["urllib"]
+    assert not hasattr(worker.globals["urllib"], "robotparser")
+    client.execute("import urllib.robotparser")
+
+
+def test_import_Y(worker_client):
+    """The `import` local command works."""
+    worker, client = worker_client
+    client.execute("import urllib")
+    assert list(worker.globals.keys()) == ["urllib"]
+    assert not hasattr(worker.globals["urllib"], "robotparser")
+
+
+def test_from_import(worker_client):
+    """The `from X import Y` local command works."""
+    worker, client = worker_client
+    client.execute("from pytest import fixture")
+    assert worker.globals == {"fixture": pytest.fixture}
+
+
+def test_from_importX(worker_client):
+    """The `from X import Y` local command works."""
+    worker, client = worker_client
+    client.execute("from urllib.parse import fixture")
+    assert worker.globals == {"fixture": pytest.fixture}
+
+
 # Fixtures
 
 class MockWorker:

