@@ -70,6 +70,9 @@ class DNSMonitorWorker(PacketSnifferWorker):
             pipeline.hsetnx(key, field, packet.time)
         pipeline.hincrby(key, "num_sightings", 1)
 
+        key = "dns_queries"
+        pipeline.sadd("dns_queries", question)
+
         key = f"dnsq_pkts:{question}"
         pipeline.hset(key, self.packet_hash, packet.time)
 
