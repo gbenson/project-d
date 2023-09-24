@@ -17,7 +17,8 @@ class Maintainer(Redis):
               |pkt
              )_
              |(dnsq
-              |dnsq_pkts
+              |httpconn
+              |unhandled
              ):
         )""", re.X)
 
@@ -26,9 +27,8 @@ class Maintainer(Redis):
               |httpconn:last_seen
               |next_raw_dhcp_id
              )$
-             |(httpconn:pkts
-             )_
              |(raw_dhcp
+               |dnsq_pkts
              ):
         )""", re.X)
 
@@ -38,6 +38,7 @@ class Maintainer(Redis):
             if self.GOOD_KEY_RE.match(key):
                 continue
             if self.JUNK_KEY_RE.match(key):
+                assert key.startswith("dnsq_pkts:")
                 pipeline.delete(key)
                 continue
             raise ValueError(key)
