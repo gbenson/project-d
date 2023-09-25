@@ -1,8 +1,8 @@
 import pytest
 
-from scapy.all import Ether
+from scapy.all import Ether, IP, TCP
 
-from nx.workers.ethan import IP, TCP, HTTPMonitorWorker
+from nx.workers.ethan import HTTPMonitorWorker
 
 
 def make_test_packet(**kwargs):
