@@ -38,5 +38,6 @@ class HTTPSnifferWorker(PacketSnifferWorker):
         conn_id = f"{dst[0]}:{dst[1]}_{src[0]}:{src[1]}"
         conn_key = f"{base_key}:pkts_{conn_id}"
 
+        pipeline.sadd(f"{base_key}s", conn_id)
         pipeline.sadd(conn_key, packet_hash)
         pipeline.hset(f"{base_key}:last_seen", conn_id, packet.time)

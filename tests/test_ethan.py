@@ -85,6 +85,9 @@ def test_regular_packets(mockdb, kwargs, expect_packet_hash):
         ["hset", "macpkts_00:0d:f7:12:ca:fe", [
             (expect_packet_hash, 1686086875.268219),
         ]],
+        ["sadd", "httpconns", (
+            "1.2.3.4:80_8.7.6.5:23456",
+        )],
         ["sadd", "httpconn:pkts_1.2.3.4:80_8.7.6.5:23456", (
             expect_packet_hash,
         )],
