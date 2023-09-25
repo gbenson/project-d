@@ -26,6 +26,16 @@ class HTTPSnifferWorker(PacketSnifferWorker):
         src = (packet[IP].src, packet[TCP].sport)
         dst = (packet[IP].dst, packet[TCP].dport)
 
+        # Figure out which direction the connection was made.
+        is_inbound = src[1] == self._port
+        is_outbound = dst[1] == self._port
+        if is_inbound == is_outbound:
+            flow = "ambiguous"
+        elif is_inbound:
+            flow = "inbound"
+        elif is_outbound:
+            flow = "outbound"
+
         # Put the endpoints in a consistent order, so packets in both
         # directions are grouped under the same connection id.
         if dst[1] != self._port:
@@ -36,8 +46,12 @@ class HTTPSnifferWorker(PacketSnifferWorker):
         base_key = f"{self.TARGET_SERVICE}conn"
 
         conn_id = f"{dst[0]}:{dst[1]}_{src[0]}:{src[1]}"
-        conn_key = f"{base_key}:pkts_{conn_id}"
+        conn_key = f"{base_key}:{conn_id}"
+        pkts_key = f"{base_key}:pkts_{conn_id}"
 
         pipeline.sadd(f"{base_key}s", conn_id)
-        pipeline.sadd(conn_key, packet_hash)
-        pipeline.hset(f"{base_key}:last_seen", conn_id, packet.time)
+        pipeline.hset(conn_key, "last_seen", packet.time)
+        pipeline.hsetnx(conn_key, "first_seen", packet.time)
+        pipeline.hincrby(conn_key, f"{flow}_packets", 1)
+        pipeline.hincrby(conn_key, f"{flow}_bytes", len(packet.original))
+        pipeline.rpush(pkts_key, packet_hash)

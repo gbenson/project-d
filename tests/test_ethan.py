@@ -33,12 +33,13 @@ def make_test_packet(**kwargs):
 
 
 @pytest.mark.parametrize(
-    "kwargs,expect_packet_hash",
+    "kwargs,expect_packet_hash,expect_dir",
     ((dict(
         sport=80,
       ),
       "02490a0077f712cf9a7f32b99b1f799f"
       "e70ef653c7d889cb26391c1fce1151:3",
+      "inbound",
       ),
      (dict(
          dst="1.2.3.4",
@@ -48,14 +49,19 @@ def make_test_packet(**kwargs):
       ),
       "8a45c4ce30b2ddaf63d414ea4503f3e5"
       "68b38ef488865c1e9194e55932114d:3",
+      "outbound",
       ),
      ))
-def test_regular_packets(mockdb, kwargs, expect_packet_hash):
+def test_regular_packets(mockdb, kwargs, expect_packet_hash, expect_dir):
     """It handles ordinary packets."""
     worker = HTTPMonitorWorker(mockdb)
     worker._process_packet(make_test_packet(**kwargs))
 
     expect_packet_key = f"pkt_{expect_packet_hash}"
+
+    expect_conn_id = "1.2.3.4:80_8.7.6.5:23456"
+    expect_conn_key = f"httpconn:{expect_conn_id}"
+    expect_pkts_key = f"httpconn:pkts_{expect_conn_id}"
 
     assert worker.db.log == [
         ["hset", expect_packet_key, [
@@ -86,14 +92,17 @@ def test_regular_packets(mockdb, kwargs, expect_packet_hash):
             (expect_packet_hash, 1686086875.268219),
         ]],
         ["sadd", "httpconns", (
-            "1.2.3.4:80_8.7.6.5:23456",
+            expect_conn_id,
         )],
-        ["sadd", "httpconn:pkts_1.2.3.4:80_8.7.6.5:23456", (
-            expect_packet_hash,
-        )],
-        ["hset", "httpconn:last_seen", [
-            ("1.2.3.4:80_8.7.6.5:23456", 1686086875.268219),
+        ["hset", expect_conn_key, [
+            ("last_seen", 1686086875.268219),
         ]],
+        ["hsetnx", expect_conn_key, [
+            ("first_seen", 1686086875.268219),
+        ]],
+        ["hincrby", (expect_conn_key, f"{expect_dir}_packets", 1)],
+        ["hincrby", (expect_conn_key, f"{expect_dir}_bytes", 54)],
+        ["rpush", expect_pkts_key, expect_packet_hash],
         ["hset", "heartbeats", [
             ("ethan", 1686086875.268219),
         ]],

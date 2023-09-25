@@ -33,12 +33,13 @@ def make_test_packet(**kwargs):
 
 
 @pytest.mark.parametrize(
-    "kwargs,expect_packet_hash",
+    "kwargs,expect_packet_hash,expect_dir",
     ((dict(
         sport=443,
       ),
       "d1ecc510582e39a470ff890dc0e7e323"
       "cf649d549f48a3444436d7d0d95230:3",
+      "inbound",
       ),
      (dict(
          dst="1.2.3.4",
@@ -48,14 +49,19 @@ def make_test_packet(**kwargs):
       ),
       "f0dda87bd67ee3af295d30ed785d0b5b"
       "9516110659ccbc7c445d10c4524764:3",
+      "outbound",
       ),
      ))
-def test_regular_packets(mockdb, kwargs, expect_packet_hash):
+def test_regular_packets(mockdb, kwargs, expect_packet_hash, expect_dir):
     """It handles ordinary packets."""
     worker = HTTPSMonitorWorker(mockdb)
     worker._process_packet(make_test_packet(**kwargs))
 
     expect_packet_key = f"pkt_{expect_packet_hash}"
+
+    expect_conn_id = "1.2.3.4:443_8.7.6.5:23456"
+    expect_conn_key = f"httpsconn:{expect_conn_id}"
+    expect_pkts_key = f"httpsconn:pkts_{expect_conn_id}"
 
     assert worker.db.log == [
         ["hset", expect_packet_key, [
@@ -86,14 +92,17 @@ def test_regular_packets(mockdb, kwargs, expect_packet_hash):
             (expect_packet_hash, 1686086875.268219),
         ]],
         ["sadd", "httpsconns", (
-            "1.2.3.4:443_8.7.6.5:23456",
+            expect_conn_id,
         )],
-        ["sadd", "httpsconn:pkts_1.2.3.4:443_8.7.6.5:23456", (
-            expect_packet_hash,
-        )],
-        ["hset", "httpsconn:last_seen", [
-            ("1.2.3.4:443_8.7.6.5:23456", 1686086875.268219),
+        ["hset", expect_conn_key, [
+            ("last_seen", 1686086875.268219),
         ]],
+        ["hsetnx", expect_conn_key, [
+            ("first_seen", 1686086875.268219),
+        ]],
+        ["hincrby", (expect_conn_key, f"{expect_dir}_packets", 1)],
+        ["hincrby", (expect_conn_key, f"{expect_dir}_bytes", 54)],
+        ["rpush", expect_pkts_key, expect_packet_hash],
         ["hset", "heartbeats", [
             ("kaitlin", 1686086875.268219),
         ]],
